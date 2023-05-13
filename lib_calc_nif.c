@@ -130,6 +130,9 @@ static ERL_NIF_TERM futhark_new_i64_1d_nif(ErlNifEnv* env, int argc, const ERL_N
 
   struct futhark_i64_1d* tmp = futhark_new_i64_1d(*ctx, (const int64_t *)bin.data, bin.size / 8);
 
+  printf("%ld\n", ((const int64_t*)bin.data)[0]);
+  printf("%ld\n", ((const int64_t*)bin.data)[1]);
+
   *res = tmp;
 
   ret = enif_make_resource(env, res);
@@ -196,8 +199,18 @@ static ERL_NIF_TERM futhark_i64_1d_to_binary_nif(ErlNifEnv* env, int argc, const
 
   const int64_t *shape = futhark_shape_i64_1d(*ctx, *xs);
 
+  printf("shape: %ld\n", shape[0]);
+
   enif_alloc_binary(shape[0] * sizeof(int64_t), &binary);
-  if (futhark_values_i64_1d(*ctx, *xs, (int64_t *)binary.data) != 0) return enif_make_badarg(env);
+
+  int64_t* blab = malloc(shape[0] * sizeof(int64_t));
+  futhark_values_i64_1d(*ctx, *xs, blab);
+  printf("blab: %ld\n", blab[0]);
+
+  if (futhark_values_i64_1d(*ctx, *xs, (int64_t *)&(binary.data)) != 0) return enif_make_badarg(env);
+
+  printf("%ld\n", ((const int64_t*)binary.data)[0]);
+
 
   ret = enif_make_binary(env, &binary);
   enif_release_resource(&binary);
