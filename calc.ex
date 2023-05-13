@@ -24,4 +24,8 @@ defmodule Calc do
   def futhark_context_config_new do
     raise "NIF futhark_context_config_new not implemented"
   end
+
+  def futhark_context_new(_cfg) do
+    raise "NIF futhark_context_new not implemented"
+  end
 end
