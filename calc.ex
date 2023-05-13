@@ -16,4 +16,8 @@ defmodule Calc do
   def futhark_new_i64_1d(_ctx, _binary) do
     raise "NIF futhark_new_i64_1d not implemented"
   end
+
+  def futhark_entry_add(_ctx, _in0, _in1) do
+    raise "NIF futhark_entry_add not implemented"
+  end
 end
