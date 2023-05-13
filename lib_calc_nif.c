@@ -5,6 +5,7 @@ struct futhark_context;
 
 ErlNifResourceType* CONFIG_TYPE;
 ErlNifResourceType* CONTEXT_TYPE;
+ErlNifResourceType* I64_1D;
 ERL_NIF_TERM atom_ok;
 
 
@@ -30,11 +31,23 @@ static int open_context(ErlNifEnv* env)
     return 0;
 }
 
+static int open_i64_1d(ErlNifEnv* env)
+{
+    const char* mod = "resources";
+    const char* name = "i64_1d";
+    int flags = ERL_NIF_RT_CREATE | ERL_NIF_RT_TAKEOVER;
+
+    I64_1D = enif_open_resource_type(env, mod, name, NULL, flags, NULL);
+    if(I64_1D == NULL) return -1;
+    return 0;
+}
+
 
 static int load(ErlNifEnv* env, void** priv, ERL_NIF_TERM load_info)
 {
     if(open_config(env) == -1) return -1;
     if(open_context(env) == -1) return -1;
+    if(open_i64_1d(env) == -1) return -1;
 
     atom_ok = enif_make_atom(env, "ok");
 
@@ -67,7 +80,7 @@ static ERL_NIF_TERM futhark_context_config_new_nif(ErlNifEnv* env, int argc, con
 static ERL_NIF_TERM futhark_context_new_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 {
   struct futhark_context_config **cfg;
-  struct futhark_context *res;
+  struct futhark_context **res;
 
   ERL_NIF_TERM ret;
 
@@ -82,19 +95,53 @@ static ERL_NIF_TERM futhark_context_new_nif(ErlNifEnv* env, int argc, const ERL_
   res = enif_alloc_resource(CONTEXT_TYPE, sizeof(struct futhark_context *));
   if(res == NULL) return enif_make_badarg(env);
 
+  struct futhark_context* tmp = futhark_context_new(*cfg);
+
+  *res = tmp;
+
   ret = enif_make_resource(env, res);
   enif_release_resource(res);
 
-  struct futhark_context* tmp = futhark_context_new(*cfg);
+  return enif_make_tuple2(env, atom_ok, ret);
+}
 
-  res = tmp;
+static ERL_NIF_TERM futhark_new_i64_1d_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
+{
+  struct futhark_context **ctx;
+  ErlNifBinary bin;
+
+  struct futhark_i64_1d **res;
+  ERL_NIF_TERM ret;
+
+  if(argc != 2) {
+    return enif_make_badarg(env);
+  }
+
+  if(!enif_get_resource(env, argv[0], CONTEXT_TYPE, (void**) &ctx)) {
+    return enif_make_badarg(env);
+  }
+
+  if (!enif_inspect_binary(env, argv[1], &bin)) {
+    return enif_make_badarg(env);
+  }
+
+  res = enif_alloc_resource(I64_1D, sizeof(struct futhark_i64_1d *));
+  if(res == NULL) return enif_make_badarg(env);
+
+  struct futhark_i64_1d* tmp = futhark_new_i64_1d(*ctx, (const int64_t *)bin.data, bin.size);
+
+  *res = tmp;
+
+  ret = enif_make_resource(env, res);
+  enif_release_resource(res);
 
   return enif_make_tuple2(env, atom_ok, ret);
 }
 
 static ErlNifFunc nif_funcs[] = {
   {"futhark_context_config_new", 0, futhark_context_config_new_nif},
-  {"futhark_context_new", 1, futhark_context_new_nif}
+  {"futhark_context_new", 1, futhark_context_new_nif},
+  {"futhark_new_i64_1d", 2, futhark_new_i64_1d_nif}
 };
 
 ERL_NIF_INIT(Elixir.Calc, nif_funcs, &load, NULL, NULL, NULL)

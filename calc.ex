@@ -12,4 +12,8 @@ defmodule Calc do
   def futhark_context_new(_cfg) do
     raise "NIF futhark_context_new not implemented"
   end
+
+  def futhark_new_i64_1d(_ctx, _binary) do
+    raise "NIF futhark_new_i64_1d not implemented"
+  end
 end
