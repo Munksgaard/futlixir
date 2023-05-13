@@ -128,7 +128,24 @@ static ERL_NIF_TERM futhark_new_u8_1d_nif(ErlNifEnv* env, int argc, const ERL_NI
   res = enif_alloc_resource(U8_1D, sizeof(struct futhark_u8_1d *));
   if(res == NULL) return enif_make_badarg(env);
 
-  struct futhark_u8_1d* tmp = futhark_new_u8_1d(*ctx, (const uint8_t *)bin.data, bin.size / 8);
+  struct futhark_u8_1d* tmp = futhark_new_u8_1d(*ctx, (const uint8_t *)bin.data, bin.size / sizeof(uint8_t));
+  const int64_t *shape = futhark_shape_u8_1d(*ctx, tmp);
+
+  printf("shape: %ld\n", shape[0]);
+
+  uint8_t* blab = malloc(shape[0] * sizeof(uint8_t));
+  futhark_values_u8_1d(*ctx, tmp, blab);
+  futhark_context_sync(*ctx);
+  printf("blab: %d\n", blab[0]);
+
+
+  uint8_t y[] = { 2, 3, 4, 1 };
+  struct futhark_u8_1d *y_arr = futhark_new_u8_1d(*ctx, y, 4);
+  uint8_t* blab2 = malloc(4 * sizeof(uint8_t));
+  futhark_values_u8_1d(*ctx, y_arr, blab2);
+  futhark_context_sync(*ctx);
+  printf("blab2: %d, %d\n", y[0], blab2[0]);
+
 
   printf("%d\n", ((const uint8_t*)bin.data)[0]);
   printf("%d\n", ((const uint8_t*)bin.data)[1]);
@@ -139,6 +156,24 @@ static ERL_NIF_TERM futhark_new_u8_1d_nif(ErlNifEnv* env, int argc, const ERL_NI
   enif_release_resource(res);
 
   return enif_make_tuple2(env, atom_ok, ret);
+}
+
+
+static ERL_NIF_TERM futhark_context_sync_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
+{
+  struct futhark_context **ctx;
+
+  if(argc != 1) {
+    return enif_make_badarg(env);
+  }
+
+  if(!enif_get_resource(env, argv[0], CONTEXT_TYPE, (void**) &ctx)) {
+    return enif_make_badarg(env);
+  }
+
+  futhark_context_sync(*ctx);
+
+  return atom_ok;
 }
 
 static ERL_NIF_TERM futhark_entry_add_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
@@ -205,12 +240,14 @@ static ERL_NIF_TERM futhark_u8_1d_to_binary_nif(ErlNifEnv* env, int argc, const 
 
   uint8_t* blab = malloc(shape[0] * sizeof(uint8_t));
   futhark_values_u8_1d(*ctx, *xs, blab);
-  printf("blab: %d\n", blab[0]);
+  futhark_context_sync(*ctx);
+  printf("blab: %d %d\n", blab[0], blab[1]);
 
-  if (futhark_values_u8_1d(*ctx, *xs, (uint8_t *)&(binary.data)) != 0) return enif_make_badarg(env);
+  if (futhark_values_u8_1d(*ctx, *xs, (uint8_t *)(binary.data)) != 0) return enif_make_badarg(env);
+  futhark_context_sync(*ctx);
 
   printf("%d\n", ((const uint8_t*)binary.data)[0]);
-
+  printf("%d\n", ((const uint8_t*)binary.data)[1]);
 
   ret = enif_make_binary(env, &binary);
   enif_release_resource(&binary);
@@ -223,6 +260,7 @@ static ErlNifFunc nif_funcs[] = {
   {"futhark_context_new", 1, futhark_context_new_nif},
   {"futhark_new_u8_1d", 2, futhark_new_u8_1d_nif},
   {"futhark_entry_add", 3, futhark_entry_add_nif},
+  {"futhark_context_sync", 1, futhark_context_sync_nif},
   {"futhark_u8_1d_to_binary", 2, futhark_u8_1d_to_binary_nif}
 };
 

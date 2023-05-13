@@ -3,7 +3,7 @@ c("calc.ex")
 {:ok, ctx} = Calc.futhark_context_new(cfg)
 xs_binary = <<0, 1>>
 {:ok, xs} = Calc.futhark_new_u8_1d(ctx, xs_binary)
-{:ok, xs_back} = Calc.futhark_u8_1d_to_binary(ctx, xs)
+{:ok, ^xs_binary} = Calc.futhark_u8_1d_to_binary(ctx, xs)
 # {:ok, } = Calc.futhark_u8_1d_to_binary(ctx, xs)
 # {:ok, ys} = Calc.futhark_new_u8_1d(ctx, <<0, 0, 0, 0, 0, 0, 0, 2>>)
 # {:ok, zs} = Calc.futhark_entry_add(ctx, xs, ys)

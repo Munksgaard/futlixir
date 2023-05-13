@@ -13,6 +13,10 @@ defmodule Calc do
     raise "NIF futhark_context_new not implemented"
   end
 
+  def futhark_context_sync(_ctx) do
+    raise "NIF futhark_context_sync not implemented"
+  end
+
   def futhark_new_u8_1d(_ctx, _binary) do
     raise "NIF futhark_new_u8_1d not implemented"
   end
