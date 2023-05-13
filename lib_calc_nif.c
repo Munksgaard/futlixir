@@ -128,7 +128,7 @@ static ERL_NIF_TERM futhark_new_i64_1d_nif(ErlNifEnv* env, int argc, const ERL_N
   res = enif_alloc_resource(I64_1D, sizeof(struct futhark_i64_1d *));
   if(res == NULL) return enif_make_badarg(env);
 
-  struct futhark_i64_1d* tmp = futhark_new_i64_1d(*ctx, (const int64_t *)bin.data, bin.size);
+  struct futhark_i64_1d* tmp = futhark_new_i64_1d(*ctx, (const int64_t *)bin.data, bin.size / 8);
 
   *res = tmp;
 
@@ -174,11 +174,43 @@ static ERL_NIF_TERM futhark_entry_add_nif(ErlNifEnv* env, int argc, const ERL_NI
   return enif_make_tuple2(env, atom_ok, ret);
 }
 
+static ERL_NIF_TERM futhark_i64_1d_to_binary_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
+{
+  struct futhark_context **ctx;
+  struct futhark_i64_1d **xs;
+
+  ErlNifBinary binary;
+  ERL_NIF_TERM ret;
+
+  if(argc != 2) {
+    return enif_make_badarg(env);
+  }
+
+  if(!enif_get_resource(env, argv[0], CONTEXT_TYPE, (void**) &ctx)) {
+    return enif_make_badarg(env);
+  }
+
+  if(!enif_get_resource(env, argv[1], I64_1D, (void**) &xs)) {
+    return enif_make_badarg(env);
+  }
+
+  const int64_t *shape = futhark_shape_i64_1d(*ctx, *xs);
+
+  enif_alloc_binary(shape[0] * sizeof(int64_t), &binary);
+  if (futhark_values_i64_1d(*ctx, *xs, (int64_t *)binary.data) != 0) return enif_make_badarg(env);
+
+  ret = enif_make_binary(env, &binary);
+  enif_release_resource(&binary);
+
+  return enif_make_tuple2(env, atom_ok, ret);
+}
+
 static ErlNifFunc nif_funcs[] = {
   {"futhark_context_config_new", 0, futhark_context_config_new_nif},
   {"futhark_context_new", 1, futhark_context_new_nif},
   {"futhark_new_i64_1d", 2, futhark_new_i64_1d_nif},
-  {"futhark_entry_add", 3, futhark_entry_add_nif}
+  {"futhark_entry_add", 3, futhark_entry_add_nif},
+  {"futhark_i64_1d_to_binary", 2, futhark_i64_1d_to_binary_nif}
 };
 
 ERL_NIF_INIT(Elixir.Calc, nif_funcs, &load, NULL, NULL, NULL)

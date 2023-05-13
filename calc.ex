@@ -20,4 +20,8 @@ defmodule Calc do
   def futhark_entry_add(_ctx, _in0, _in1) do
     raise "NIF futhark_entry_add not implemented"
   end
+
+  def futhark_i64_1d_to_binary(_ctx, _in0) do
+    raise "NIF futhark_i64_1d_to_binary not implemented"
+  end
 end
