@@ -131,25 +131,6 @@ static ERL_NIF_TERM futhark_new_u8_1d_nif(ErlNifEnv* env, int argc, const ERL_NI
   struct futhark_u8_1d* tmp = futhark_new_u8_1d(*ctx, (const uint8_t *)bin.data, bin.size / sizeof(uint8_t));
   const int64_t *shape = futhark_shape_u8_1d(*ctx, tmp);
 
-  printf("shape: %ld\n", shape[0]);
-
-  uint8_t* blab = malloc(shape[0] * sizeof(uint8_t));
-  futhark_values_u8_1d(*ctx, tmp, blab);
-  futhark_context_sync(*ctx);
-  printf("blab: %d\n", blab[0]);
-
-
-  uint8_t y[] = { 2, 3, 4, 1 };
-  struct futhark_u8_1d *y_arr = futhark_new_u8_1d(*ctx, y, 4);
-  uint8_t* blab2 = malloc(4 * sizeof(uint8_t));
-  futhark_values_u8_1d(*ctx, y_arr, blab2);
-  futhark_context_sync(*ctx);
-  printf("blab2: %d, %d\n", y[0], blab2[0]);
-
-
-  printf("%d\n", ((const uint8_t*)bin.data)[0]);
-  printf("%d\n", ((const uint8_t*)bin.data)[1]);
-
   *res = tmp;
 
   ret = enif_make_resource(env, res);
@@ -234,20 +215,10 @@ static ERL_NIF_TERM futhark_u8_1d_to_binary_nif(ErlNifEnv* env, int argc, const 
 
   const int64_t *shape = futhark_shape_u8_1d(*ctx, *xs);
 
-  printf("shape: %ld\n", shape[0]);
-
   enif_alloc_binary(shape[0] * sizeof(uint8_t), &binary);
-
-  uint8_t* blab = malloc(shape[0] * sizeof(uint8_t));
-  futhark_values_u8_1d(*ctx, *xs, blab);
-  futhark_context_sync(*ctx);
-  printf("blab: %d %d\n", blab[0], blab[1]);
 
   if (futhark_values_u8_1d(*ctx, *xs, (uint8_t *)(binary.data)) != 0) return enif_make_badarg(env);
   futhark_context_sync(*ctx);
-
-  printf("%d\n", ((const uint8_t*)binary.data)[0]);
-  printf("%d\n", ((const uint8_t*)binary.data)[1]);
 
   ret = enif_make_binary(env, &binary);
   enif_release_resource(&binary);
