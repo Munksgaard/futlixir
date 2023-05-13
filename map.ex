@@ -1,8 +1,8 @@
-defmodule Calc do
+defmodule Map.NIF do
   @on_load :load_nifs
 
   def load_nifs do
-    :erlang.load_nif('./lib_calc_nif', 0)
+    :erlang.load_nif('./lib_map_nif', 0)
   end
 
   def futhark_context_config_new do

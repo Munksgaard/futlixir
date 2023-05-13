@@ -234,4 +234,4 @@ static ErlNifFunc nif_funcs[] = {
   {"futhark_u8_1d_to_binary", 2, futhark_u8_1d_to_binary_nif}
 };
 
-ERL_NIF_INIT(Elixir.Calc, nif_funcs, &load, NULL, NULL, NULL)
+ERL_NIF_INIT(Elixir.Map.NIF, nif_funcs, &load, NULL, NULL, NULL)

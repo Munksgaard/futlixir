@@ -1,4 +1,4 @@
-lib_calc_nif.so: lib_calc_nif.c lib_map.c
+lib_map_nif.so: lib_map_nif.c lib_map.c
 	gcc -shared -o $@ -fPIC $< -lOpenCL -lm -I `nix-build --no-out-link '<nixpkgs>' -A erlang`/lib/erlang/usr/include/
 
 # https://stackoverflow.com/questions/3046117/gnu-makefile-multiple-outputs-from-single-rule-preventing-intermediate-files
