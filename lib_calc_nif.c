@@ -8,7 +8,6 @@ ErlNifResourceType* CONTEXT_TYPE;
 ErlNifResourceType* U8_1D;
 ERL_NIF_TERM atom_ok;
 
-
 static int open_config(ErlNifEnv* env)
 {
     const char* mod = "resources";
