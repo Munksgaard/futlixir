@@ -80,7 +80,7 @@ static ERL_NIF_TERM dividir_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM arg
 
 static ERL_NIF_TERM futhark_context_config_new_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 {
-  struct futhark_context_config *res;
+  struct futhark_context_config **res;
 
   ERL_NIF_TERM ret;
 
@@ -88,30 +88,22 @@ static ERL_NIF_TERM futhark_context_config_new_nif(ErlNifEnv* env, int argc, con
     return enif_make_badarg(env);
   }
 
-  printf("sizeof(struct futhark_context_config *): %ld\n", sizeof(struct futhark_context_config *));
-
   res = enif_alloc_resource(CONFIG_TYPE, sizeof(struct futhark_context_config *));
   if(res == NULL) return enif_make_badarg(env);
 
-  printf("res: %d, %p, %p\n", res->in_use, res, &res);
+  struct futhark_context_config* tmp = futhark_context_config_new();
+
+  *res = tmp;
 
   ret = enif_make_resource(env, res);
   enif_release_resource(res);
-
-  struct futhark_context_config* tmp = futhark_context_config_new();
-
-  printf("tmp: %d, %p, %p\n", tmp->in_use, tmp, &tmp);
-
-  res = tmp;
-
-  printf("res: %d, %p, %p\n", res->in_use, res, &res);
 
   return enif_make_tuple2(env, atom_ok, ret);
 }
 
 static ERL_NIF_TERM futhark_context_new_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 {
-  struct futhark_context_config *cfg;
+  struct futhark_context_config **cfg;
   struct futhark_context *res;
 
   ERL_NIF_TERM ret;
@@ -124,23 +116,16 @@ static ERL_NIF_TERM futhark_context_new_nif(ErlNifEnv* env, int argc, const ERL_
     return enif_make_badarg(env);
   }
 
-  printf("cfg: %d, %p, %p\n", cfg->in_use, cfg, &cfg);
-
-  printf("1\n");
   res = enif_alloc_resource(CONTEXT_TYPE, sizeof(struct futhark_context *));
   if(res == NULL) return enif_make_badarg(env);
-
-  printf("1\n");
 
   ret = enif_make_resource(env, res);
   enif_release_resource(res);
 
-  printf("1\n");
-  struct futhark_context* tmp = futhark_context_new(cfg);
+  struct futhark_context* tmp = futhark_context_new(*cfg);
 
   res = tmp;
 
-  printf("1\n");
   return enif_make_tuple2(env, atom_ok, ret);
 }
 
