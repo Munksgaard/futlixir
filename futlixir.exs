@@ -2,7 +2,7 @@
 
 Mix.install([:jason])
 
-defmodule Futlexir.EX do
+defmodule Futlixir.EX do
   def boilerplate(module_name, nif) do
     ~s"""
     defmodule #{module_name} do
@@ -60,7 +60,7 @@ defmodule Futlexir.EX do
   end
 end
 
-defmodule Futlexir.NIF do
+defmodule Futlixir.NIF do
   def boilerplate(rootname) do
     ~s"""
     #include <erl_nif.h>
@@ -161,7 +161,7 @@ defmodule Futlexir.NIF do
   end
 end
 
-defmodule Futlexir.CLI do
+defmodule Futlixir.CLI do
   def main(args \\ []) do
     :ok =
       with {:ok, filename, module_name} <- get_args(args),
@@ -175,7 +175,7 @@ defmodule Futlexir.CLI do
 
   defp write_ex_file(rootname, module_name, manifest) do
     with {:ok, ex_file} <- File.open(rootname <> ".ex", [:write]) do
-      IO.puts(ex_file, Futlexir.EX.boilerplate(module_name, rootname <> "_nif"))
+      IO.puts(ex_file, Futlixir.EX.boilerplate(module_name, rootname <> "_nif"))
       print_array_types(ex_file, manifest["types"])
       print_entry_points(ex_file, manifest["entry_points"])
       IO.puts(ex_file, "end")
@@ -185,13 +185,13 @@ defmodule Futlexir.CLI do
 
   defp print_entry_points(device, entry_points) do
     for {_name, details} <- entry_points do
-      IO.puts(device, Futlexir.EX.new_entry_point(details))
+      IO.puts(device, Futlixir.EX.new_entry_point(details))
     end
   end
 
   defp print_array_types(device, types) do
     for {_ty, details} <- types do
-      IO.puts(device, Futlexir.EX.new_array_type(details))
+      IO.puts(device, Futlixir.EX.new_array_type(details))
     end
   end
 
@@ -218,13 +218,13 @@ defmodule Futlexir.CLI do
 
   defp write_nif_file(rootname, module_name, manifest) do
     with {:ok, nif_file} <- File.open(rootname <> "_nif.c", [:write]) do
-      IO.puts(nif_file, Futlexir.NIF.boilerplate(rootname))
+      IO.puts(nif_file, Futlixir.NIF.boilerplate(rootname))
       print_nif_resources(nif_file, manifest["types"])
-      IO.puts(nif_file, Futlexir.NIF.open_resources(manifest["types"]))
+      IO.puts(nif_file, Futlixir.NIF.open_resources(manifest["types"]))
       File.close(nif_file)
       :ok
     end
   end
 end
 
-Futlexir.CLI.main(System.argv())
+Futlixir.CLI.main(System.argv())
