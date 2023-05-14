@@ -11,60 +11,26 @@ ErlNifResourceType* CONTEXT_TYPE;
 ErlNifResourceType* I64_1D;
 ErlNifResourceType* U8_1D;
 
-static int open_config(ErlNifEnv* env)
+static int open_resource(ErlNifEnv* env, ErlNifResourceType** resource_type, const char* name)
 {
-    const char* mod = "resources";
-    const char* name = "Config";
-    int flags = ERL_NIF_RT_CREATE | ERL_NIF_RT_TAKEOVER;
+  const char* mod = "resources";
+  int flags = ERL_NIF_RT_CREATE | ERL_NIF_RT_TAKEOVER;
 
-    CONFIG_TYPE = enif_open_resource_type(env, mod, name, NULL, flags, NULL);
-    if(CONFIG_TYPE == NULL) return -1;
-    return 0;
-}
-
-static int open_context(ErlNifEnv* env)
-{
-    const char* mod = "resources";
-    const char* name = "Context";
-    int flags = ERL_NIF_RT_CREATE | ERL_NIF_RT_TAKEOVER;
-
-    CONTEXT_TYPE = enif_open_resource_type(env, mod, name, NULL, flags, NULL);
-    if(CONFIG_TYPE == NULL) return -1;
-    return 0;
-}
-
-static int open_u8_1d(ErlNifEnv* env)
-{
-    const char* mod = "resources";
-    const char* name = "u8_1d";
-    int flags = ERL_NIF_RT_CREATE | ERL_NIF_RT_TAKEOVER;
-
-    U8_1D = enif_open_resource_type(env, mod, name, NULL, flags, NULL);
-    if(U8_1D == NULL) return -1;
-    return 0;
-}
-
-static int open_i64_1d(ErlNifEnv* env)
-{
-    const char* mod = "resources";
-    const char* name = "i64_1d";
-    int flags = ERL_NIF_RT_CREATE | ERL_NIF_RT_TAKEOVER;
-
-    I64_1D = enif_open_resource_type(env, mod, name, NULL, flags, NULL);
-    if(I64_1D == NULL) return -1;
-    return 0;
+  *resource_type = enif_open_resource_type(env, mod, name, NULL, flags, NULL);
+  if(CONFIG_TYPE == NULL) return -1;
+  return 0;
 }
 
 static int load(ErlNifEnv* env, void** priv, ERL_NIF_TERM load_info)
 {
-    if(open_config(env) == -1) return -1;
-    if(open_context(env) == -1) return -1;
-    if(open_u8_1d(env) == -1) return -1;
-    if(open_i64_1d(env) == -1) return -1;
+  if(open_resource(env, &CONFIG_TYPE, "Config") == -1) return -1;
+  if(open_resource(env, &CONTEXT_TYPE, "Context") == -1) return -1;
+  if(open_resource(env, &I64_1D, "i64_1d") == -1) return -1;
+  if(open_resource(env, &U8_1D, "u8_1d") == -1) return -1;
 
-    atom_ok = enif_make_atom(env, "ok");
+  atom_ok = enif_make_atom(env, "ok");
 
-    return 0;
+  return 0;
 }
 
 static ERL_NIF_TERM futhark_context_config_new_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])

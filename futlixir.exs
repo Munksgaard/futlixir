@@ -78,20 +78,20 @@ defmodule Futlixir.NIF do
   def open_resources(types) do
     ~s"""
 
-    static int open_resource(ErlNifEnv* env, const char* name)
+    static int open_resource(ErlNifEnv* env, ErlNifResourceType** resource_type, const char* name)
     {
       const char* mod = "resources";
       int flags = ERL_NIF_RT_CREATE | ERL_NIF_RT_TAKEOVER;
 
-      CONTEXT_TYPE = enif_open_resource_type(env, mod, name, NULL, flags, NULL);
+      *resource_type = enif_open_resource_type(env, mod, name, NULL, flags, NULL);
       if(CONFIG_TYPE == NULL) return -1;
       return 0;
     }
 
     static int load(ErlNifEnv* env, void** priv, ERL_NIF_TERM load_info)
     {
-      if(open_resource(env, "Config") == -1) return -1;
-      if(open_resource(env, "Context") == -1) return -1;
+      if(open_resource(env, &CONFIG_TYPE, "Config") == -1) return -1;
+      if(open_resource(env, &CONTEXT_TYPE, "Context") == -1) return -1;
     #{open_types(types)}
 
       atom_ok = enif_make_atom(env, "ok");
@@ -155,7 +155,8 @@ defmodule Futlixir.NIF do
 
   def open_types(types) do
     for {_, %{"elemtype" => elemtype, "rank" => rank}} <- types do
-      "  if(open_resource(env, \"#{elemtype}_#{rank}d\") == -1) return -1;"
+      name = "#{elemtype}_#{rank}d"
+      "  if(open_resource(env, &#{String.upcase(name)}, \"#{name}\") == -1) return -1;"
     end
     |> Enum.join("\n")
   end
