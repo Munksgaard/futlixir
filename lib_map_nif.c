@@ -4,11 +4,12 @@
 struct futhark_context;
 
 ERL_NIF_TERM atom_ok;
+
 ErlNifResourceType* CONFIG_TYPE;
 ErlNifResourceType* CONTEXT_TYPE;
 
-ErlNifResourceType* U8_1D;
 ErlNifResourceType* I64_1D;
+ErlNifResourceType* U8_1D;
 
 static int open_config(ErlNifEnv* env)
 {
