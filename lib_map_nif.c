@@ -107,7 +107,7 @@ static ERL_NIF_TERM futhark_new_i64_1d_nif(ErlNifEnv* env, int argc, const ERL_N
   res = enif_alloc_resource(I64_1D, sizeof(struct futhark_i64_1d *));
   if(res == NULL) return enif_make_badarg(env);
 
-  struct futhark_i64_1d* tmp = futhark_new_i64_1d(*ctx, (const int64_t *)bin.data, bin.size / sizeof(int64_t));
+  struct futhark_i64_1d * tmp = futhark_new_i64_1d(*ctx, (const int64_t *)bin.data, bin.size / sizeof(int64_t));
   const int64_t *shape = futhark_shape_i64_1d(*ctx, tmp);
 
   *res = tmp;
@@ -141,7 +141,7 @@ static ERL_NIF_TERM futhark_new_u8_1d_nif(ErlNifEnv* env, int argc, const ERL_NI
   res = enif_alloc_resource(U8_1D, sizeof(struct futhark_u8_1d *));
   if(res == NULL) return enif_make_badarg(env);
 
-  struct futhark_u8_1d* tmp = futhark_new_u8_1d(*ctx, (const uint8_t *)bin.data, bin.size / sizeof(uint8_t));
+  struct futhark_u8_1d * tmp = futhark_new_u8_1d(*ctx, (const uint8_t *)bin.data, bin.size / sizeof(uint8_t));
   const int64_t *shape = futhark_shape_u8_1d(*ctx, tmp);
 
   *res = tmp;
