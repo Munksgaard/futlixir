@@ -84,6 +84,23 @@ static ERL_NIF_TERM futhark_context_new_nif(ErlNifEnv* env, int argc, const ERL_
   return enif_make_tuple2(env, atom_ok, ret);
 }
 
+static ERL_NIF_TERM futhark_context_sync_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
+{
+  struct futhark_context **ctx;
+
+  if(argc != 1) {
+    return enif_make_badarg(env);
+  }
+
+  if(!enif_get_resource(env, argv[0], CONTEXT_TYPE, (void**) &ctx)) {
+    return enif_make_badarg(env);
+  }
+
+  futhark_context_sync(*ctx);
+
+  return atom_ok;
+}
+
 static ERL_NIF_TERM futhark_new_i64_1d_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 {
   struct futhark_context **ctx;
@@ -150,23 +167,6 @@ static ERL_NIF_TERM futhark_new_u8_1d_nif(ErlNifEnv* env, int argc, const ERL_NI
   enif_release_resource(res);
 
   return enif_make_tuple2(env, atom_ok, ret);
-}
-
-static ERL_NIF_TERM futhark_context_sync_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
-{
-  struct futhark_context **ctx;
-
-  if(argc != 1) {
-    return enif_make_badarg(env);
-  }
-
-  if(!enif_get_resource(env, argv[0], CONTEXT_TYPE, (void**) &ctx)) {
-    return enif_make_badarg(env);
-  }
-
-  futhark_context_sync(*ctx);
-
-  return atom_ok;
 }
 
 static ERL_NIF_TERM futhark_entry_add_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
