@@ -169,6 +169,40 @@ static ERL_NIF_TERM futhark_new_u8_1d_nif(ErlNifEnv* env, int argc, const ERL_NI
   return enif_make_tuple2(env, atom_ok, ret);
 }
 
+
+static ERL_NIF_TERM futhark_u8_1d_to_binary_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
+{
+  struct futhark_context **ctx;
+  struct futhark_u8_1d **xs;
+
+  ErlNifBinary binary;
+  ERL_NIF_TERM ret;
+
+  if(argc != 2) {
+    return enif_make_badarg(env);
+  }
+
+  if(!enif_get_resource(env, argv[0], CONTEXT_TYPE, (void**) &ctx)) {
+    return enif_make_badarg(env);
+  }
+
+  if(!enif_get_resource(env, argv[1], U8_1D, (void**) &xs)) {
+    return enif_make_badarg(env);
+  }
+
+  const int64_t *shape = futhark_shape_u8_1d(*ctx, *xs);
+
+  enif_alloc_binary(shape[0] * sizeof(uint8_t), &binary);
+
+  if (futhark_values_u8_1d(*ctx, *xs, (uint8_t *)(binary.data)) != 0) return enif_make_badarg(env);
+  futhark_context_sync(*ctx);
+
+  ret = enif_make_binary(env, &binary);
+  enif_release_resource(&binary);
+
+  return enif_make_tuple2(env, atom_ok, ret);
+}
+
 static ERL_NIF_TERM futhark_entry_add_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 {
   struct futhark_context **ctx;
@@ -205,7 +239,6 @@ static ERL_NIF_TERM futhark_entry_add_nif(ErlNifEnv* env, int argc, const ERL_NI
   return enif_make_tuple2(env, atom_ok, ret);
 }
 
-
 static ERL_NIF_TERM futhark_entry_add_i64_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 {
   struct futhark_context **ctx;
@@ -238,39 +271,6 @@ static ERL_NIF_TERM futhark_entry_add_i64_nif(ErlNifEnv* env, int argc, const ER
 
   ret = enif_make_resource(env, res);
   enif_release_resource(res);
-
-  return enif_make_tuple2(env, atom_ok, ret);
-}
-
-static ERL_NIF_TERM futhark_u8_1d_to_binary_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
-{
-  struct futhark_context **ctx;
-  struct futhark_u8_1d **xs;
-
-  ErlNifBinary binary;
-  ERL_NIF_TERM ret;
-
-  if(argc != 2) {
-    return enif_make_badarg(env);
-  }
-
-  if(!enif_get_resource(env, argv[0], CONTEXT_TYPE, (void**) &ctx)) {
-    return enif_make_badarg(env);
-  }
-
-  if(!enif_get_resource(env, argv[1], U8_1D, (void**) &xs)) {
-    return enif_make_badarg(env);
-  }
-
-  const int64_t *shape = futhark_shape_u8_1d(*ctx, *xs);
-
-  enif_alloc_binary(shape[0] * sizeof(uint8_t), &binary);
-
-  if (futhark_values_u8_1d(*ctx, *xs, (uint8_t *)(binary.data)) != 0) return enif_make_badarg(env);
-  futhark_context_sync(*ctx);
-
-  ret = enif_make_binary(env, &binary);
-  enif_release_resource(&binary);
 
   return enif_make_tuple2(env, atom_ok, ret);
 }
