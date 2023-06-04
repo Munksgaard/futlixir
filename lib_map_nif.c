@@ -84,40 +84,6 @@ static ERL_NIF_TERM futhark_context_new_nif(ErlNifEnv* env, int argc, const ERL_
   return enif_make_tuple2(env, atom_ok, ret);
 }
 
-static ERL_NIF_TERM futhark_new_u8_1d_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
-{
-  struct futhark_context **ctx;
-  ErlNifBinary bin;
-
-  struct futhark_u8_1d **res;
-  ERL_NIF_TERM ret;
-
-  if(argc != 2) {
-    return enif_make_badarg(env);
-  }
-
-  if(!enif_get_resource(env, argv[0], CONTEXT_TYPE, (void**) &ctx)) {
-    return enif_make_badarg(env);
-  }
-
-  if (!enif_inspect_binary(env, argv[1], &bin)) {
-    return enif_make_badarg(env);
-  }
-
-  res = enif_alloc_resource(U8_1D, sizeof(struct futhark_u8_1d *));
-  if(res == NULL) return enif_make_badarg(env);
-
-  struct futhark_u8_1d* tmp = futhark_new_u8_1d(*ctx, (const uint8_t *)bin.data, bin.size / sizeof(uint8_t));
-  const int64_t *shape = futhark_shape_u8_1d(*ctx, tmp);
-
-  *res = tmp;
-
-  ret = enif_make_resource(env, res);
-  enif_release_resource(res);
-
-  return enif_make_tuple2(env, atom_ok, ret);
-}
-
 static ERL_NIF_TERM futhark_new_i64_1d_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 {
   struct futhark_context **ctx;
@@ -152,6 +118,39 @@ static ERL_NIF_TERM futhark_new_i64_1d_nif(ErlNifEnv* env, int argc, const ERL_N
   return enif_make_tuple2(env, atom_ok, ret);
 }
 
+static ERL_NIF_TERM futhark_new_u8_1d_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
+{
+  struct futhark_context **ctx;
+  ErlNifBinary bin;
+
+  struct futhark_u8_1d **res;
+  ERL_NIF_TERM ret;
+
+  if(argc != 2) {
+    return enif_make_badarg(env);
+  }
+
+  if(!enif_get_resource(env, argv[0], CONTEXT_TYPE, (void**) &ctx)) {
+    return enif_make_badarg(env);
+  }
+
+  if (!enif_inspect_binary(env, argv[1], &bin)) {
+    return enif_make_badarg(env);
+  }
+
+  res = enif_alloc_resource(U8_1D, sizeof(struct futhark_u8_1d *));
+  if(res == NULL) return enif_make_badarg(env);
+
+  struct futhark_u8_1d* tmp = futhark_new_u8_1d(*ctx, (const uint8_t *)bin.data, bin.size / sizeof(uint8_t));
+  const int64_t *shape = futhark_shape_u8_1d(*ctx, tmp);
+
+  *res = tmp;
+
+  ret = enif_make_resource(env, res);
+  enif_release_resource(res);
+
+  return enif_make_tuple2(env, atom_ok, ret);
+}
 
 static ERL_NIF_TERM futhark_context_sync_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 {
