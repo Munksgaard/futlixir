@@ -1,7 +1,8 @@
 # Futlixir
 
-A NIF-generator for [Futhark](https://futhark-lang.org)-code, which lets you run
-Futhark code from the safety and comfort of the BEAM VM.
+A [NIF](https://www.erlang.org/doc/tutorial/nif.html)-generator for
+[Futhark](https://futhark-lang.org)-code, which lets you run Futhark code from
+the safety and comfort of the BEAM VM.
 
 ## Usage
 
