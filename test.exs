@@ -1,6 +1,7 @@
-c("map.ex")
+c("lib_map.ex")
 {:ok, cfg} = Map.NIF.futhark_context_config_new()
 {:ok, ctx} = Map.NIF.futhark_context_new(cfg)
+
 xs_binary = <<0, 1>>
 {:ok, xs} = Map.NIF.futhark_new_u8_1d(ctx, xs_binary)
 {:ok, ^xs_binary} = Map.NIF.futhark_u8_1d_to_binary(ctx, xs)

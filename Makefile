@@ -1,5 +1,15 @@
+.PHONY: all run
+
+all: lib_map_nif.so
+
+run: all lib_map.ex
+	iex --dot-iex test.exs
+
 lib_map_nif.so: lib_map_nif.c lib_map.c
 	gcc -shared -o $@ -fPIC $< -lOpenCL -lm -I `nix-build --no-out-link '<nixpkgs>' -A erlang`/lib/erlang/usr/include/
+
+lib_map_nif.c: lib_map.c lib_map.json
+	./futlixir.exs lib_map.json Map.NIF
 
 # https://stackoverflow.com/questions/3046117/gnu-makefile-multiple-outputs-from-single-rule-preventing-intermediate-files
 lib_map.c lib_map.h: lib_map.intermediate ;
@@ -13,4 +23,4 @@ lib_map.so: lib_map.c lib_map.h
 
 .PHONY: clean
 clean:
-	rm -f *.so lib_map.c lib_map.h lib_map.json
+	rm -f *.so lib_map.c lib_map.h lib_map.json lib_map.ex lib_map_nif.c

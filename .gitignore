@@ -1,4 +1,6 @@
 *.so
-lib_map.c
-lib_map.h
-lib_map.json
+*.c
+*.h
+*.json
+*.fut
+*.ex
