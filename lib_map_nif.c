@@ -202,7 +202,6 @@ static ERL_NIF_TERM futhark_new_u8_1d_nif(ErlNifEnv* env, int argc, const ERL_NI
   return enif_make_tuple2(env, atom_ok, ret);
 }
 
-
 static ERL_NIF_TERM futhark_u8_1d_to_binary_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 {
   struct futhark_context **ctx;
@@ -239,10 +238,12 @@ static ERL_NIF_TERM futhark_u8_1d_to_binary_nif(ErlNifEnv* env, int argc, const 
 static ERL_NIF_TERM futhark_entry_add_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 {
   struct futhark_context **ctx;
+
   struct futhark_u8_1d **xs;
   struct futhark_u8_1d **ys;
 
   struct futhark_u8_1d **res;
+
   ERL_NIF_TERM ret;
 
   if(argc != 3) {
@@ -275,10 +276,12 @@ static ERL_NIF_TERM futhark_entry_add_nif(ErlNifEnv* env, int argc, const ERL_NI
 static ERL_NIF_TERM futhark_entry_add_i64_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 {
   struct futhark_context **ctx;
+
   struct futhark_i64_1d **xs;
   struct futhark_i64_1d **ys;
 
   struct futhark_i64_1d **res;
+
   ERL_NIF_TERM ret;
 
   if(argc != 3) {
@@ -311,6 +314,7 @@ static ERL_NIF_TERM futhark_entry_add_i64_nif(ErlNifEnv* env, int argc, const ER
 static ErlNifFunc nif_funcs[] = {
   {"futhark_context_config_new", 0, futhark_context_config_new_nif},
   {"futhark_context_new", 1, futhark_context_new_nif},
+
   {"futhark_new_i64_1d", 2, futhark_new_i64_1d_nif},
   {"futhark_i64_1d_to_binary", 2, futhark_i64_1d_to_binary_nif},
   {"futhark_new_u8_1d", 2, futhark_new_u8_1d_nif},
