@@ -276,13 +276,11 @@ defmodule Futlixir.NIF do
         #{types[type]["ctype"]}*#{name};
         """
       end
-      |> Enum.join("\n  ")
+      |> Enum.join("  ")
 
     init_outputs =
       for %{"type" => type, "unique" => _unique} <- outputs do
-        ~s"""
-        #{types[type]["ctype"]}*res;
-        """
+        "#{types[type]["ctype"]}*res;"
       end
       |> Enum.join("\n  ")
 
@@ -295,7 +293,7 @@ defmodule Futlixir.NIF do
           }
         """
       end
-      |> Enum.join("\n\n  ")
+      |> Enum.join("\n  ")
 
     alloc_results =
       for %{"type" => type, "unique" => _unique} <- outputs do
@@ -318,7 +316,6 @@ defmodule Futlixir.NIF do
       struct futhark_context **ctx;
 
       #{init_inputs}
-
       #{init_outputs}
 
       ERL_NIF_TERM ret;
@@ -332,9 +329,7 @@ defmodule Futlixir.NIF do
       }
 
       #{get_resources}
-
       #{alloc_results}
-
       if (#{cfun}(*ctx, res, #{input_names}) != 0) return enif_make_badarg(env);
 
       ret = enif_make_resource(env, res);
@@ -423,7 +418,7 @@ defmodule Futlixir.CLI do
     end
   end
 
-  defp print_nif_funcs(device, module_name, entry_points, types) do
+  defp print_nif_funcs(device, entry_points, types) do
     IO.puts(device, ~s"""
     static ErlNifFunc nif_funcs[] = {
       {"futhark_context_config_new", 0, futhark_context_config_new_nif},
@@ -446,8 +441,6 @@ defmodule Futlixir.CLI do
     IO.puts(device, ~s"""
       {"futhark_context_sync", 1, futhark_context_sync_nif}
     };
-
-    ERL_NIF_INIT(Elixir.#{module_name}, nif_funcs, &load, NULL, NULL, NULL)
     """)
   end
 
@@ -458,7 +451,8 @@ defmodule Futlixir.CLI do
       IO.puts(nif_file, Futlixir.NIF.open_resources(manifest["types"]))
       print_nif_array_types(nif_file, manifest["types"])
       print_nif_entry_points(nif_file, manifest["entry_points"], manifest["types"])
-      print_nif_funcs(nif_file, module_name, manifest["entry_points"], manifest["types"])
+      print_nif_funcs(nif_file, manifest["entry_points"], manifest["types"])
+      IO.puts(nif_file, "ERL_NIF_INIT(Elixir.#{module_name}, nif_funcs, &load, NULL, NULL, NULL)")
       File.close(nif_file)
       :ok
     end
