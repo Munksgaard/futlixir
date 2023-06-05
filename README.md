@@ -49,5 +49,9 @@ binaries on the Elixir-side.
  - [ ] Support scalar arguments
  - [ ] Support opaque Futhark types
  - [ ] Support multiple return values
+ - [ ] Package as a proper application
+ - [ ] Release with mix?
+ - [ ] Flakify
+ - [ ] More testing
 
 Probably other stuff I haven't thought of as well.
