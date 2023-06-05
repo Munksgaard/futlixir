@@ -311,13 +311,13 @@ static ERL_NIF_TERM futhark_entry_add_i64_nif(ErlNifEnv* env, int argc, const ER
 static ErlNifFunc nif_funcs[] = {
   {"futhark_context_config_new", 0, futhark_context_config_new_nif},
   {"futhark_context_new", 1, futhark_context_new_nif},
-  {"futhark_new_u8_1d", 2, futhark_new_u8_1d_nif},
   {"futhark_new_i64_1d", 2, futhark_new_i64_1d_nif},
+  {"futhark_i64_1d_to_binary", 2, futhark_i64_1d_to_binary_nif},
+  {"futhark_new_u8_1d", 2, futhark_new_u8_1d_nif},
+  {"futhark_u8_1d_to_binary", 2, futhark_u8_1d_to_binary_nif},
   {"futhark_entry_add", 3, futhark_entry_add_nif},
   {"futhark_entry_add_i64", 3, futhark_entry_add_i64_nif},
-  {"futhark_context_sync", 1, futhark_context_sync_nif},
-  {"futhark_u8_1d_to_binary", 2, futhark_u8_1d_to_binary_nif},
-  {"futhark_i64_1d_to_binary", 2, futhark_i64_1d_to_binary_nif}
+  {"futhark_context_sync", 1, futhark_context_sync_nif}
 };
 
 ERL_NIF_INIT(Elixir.Map.NIF, nif_funcs, &load, NULL, NULL, NULL)
