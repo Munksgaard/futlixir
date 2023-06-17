@@ -10,7 +10,8 @@ To generate and compile the shared NIF library:
 
 ```
 futhark opencl --library lib_map.fut
-./futlixir.exs lib_map.json Map.NIF
+mix escript.build
+./futlixir lib_map.json Map.NIF
 gcc -shared -o lib_map_nif.so -fPIC lib_map_nif.c -lOpenCL -lm
 ```
 
