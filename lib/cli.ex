@@ -17,8 +17,7 @@ defmodule Futlixir.CLI do
              ),
            rootname <- Path.rootname(filename),
            :ok <- Futlixir.EX.write_ex_file(rootname, module_name, manifest),
-           :ok <- Futlixir.NIF.write_nif_file(rootname, module_name, manifest),
-           do: :ok
+           do: Futlixir.NIF.write_nif_file(rootname, module_name, manifest)
   end
 
   defp get_args(args) do
