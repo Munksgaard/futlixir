@@ -54,4 +54,26 @@ defmodule Futlixir.EX do
       end
     """
   end
+
+  defp print_entry_points(device, entry_points) do
+    for {_name, details} <- entry_points do
+      IO.puts(device, Futlixir.EX.new_entry_point(details))
+    end
+  end
+
+  defp print_array_types(device, types) do
+    for {_ty, details} <- types do
+      IO.puts(device, Futlixir.EX.new_array_type(details))
+    end
+  end
+
+  def write_ex_file(rootname, module_name, manifest) do
+    with {:ok, ex_file} <- File.open(rootname <> ".ex", [:write]) do
+      IO.puts(ex_file, Futlixir.EX.boilerplate(module_name, rootname <> "_nif"))
+      print_array_types(ex_file, manifest["types"])
+      print_entry_points(ex_file, manifest["entry_points"])
+      IO.puts(ex_file, "end")
+      File.close(ex_file)
+    end
+  end
 end
