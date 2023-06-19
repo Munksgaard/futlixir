@@ -8,8 +8,13 @@ run: all lib_map.ex
 lib_map_nif.so: lib_map_nif.c lib_map.c
 	gcc -shared -o $@ -fPIC $< -lOpenCL -lm -I `nix-build --no-out-link '<nixpkgs>' -A erlang`/lib/erlang/usr/include/
 
-lib_map_nif.c: lib_map.c lib_map.json
-	./futlixir.exs lib_map.json Map.NIF
+lib_map_nif.c: lib_map.c lib_map.json futlixir
+	./futlixir lib_map.json Map.NIF
+
+lib_map.ex: futlixir
+
+futlixir:
+	mix escript.build
 
 # https://stackoverflow.com/questions/3046117/gnu-makefile-multiple-outputs-from-single-rule-preventing-intermediate-files
 lib_map.c lib_map.h: lib_map.intermediate ;
