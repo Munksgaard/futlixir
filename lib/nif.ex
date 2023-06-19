@@ -1,4 +1,9 @@
 defmodule Futlixir.NIF do
+  @moduledoc """
+  This module is responsible for generating the NIF C files corresponding
+  to a particular Futhark library.
+  """
+
   def boilerplate(rootname) do
     ~s"""
     #include <erl_nif.h>

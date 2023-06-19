@@ -1,4 +1,8 @@
 defmodule Futlixir.EX do
+  @moduledoc """
+  This module is responsible for generating the boilerplate Elixir module that loads the NIF.
+  """
+
   def boilerplate(module_name, nif) do
     ~s"""
     defmodule #{module_name} do

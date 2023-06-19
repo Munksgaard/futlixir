@@ -1,4 +1,8 @@
 defmodule Futlixir.CLI do
+  @moduledoc """
+  A thin module for handling CLI invocation.
+  """
+
   def main(args \\ []) do
     :ok =
       with {:ok, filename, module_name} <- get_args(args),
