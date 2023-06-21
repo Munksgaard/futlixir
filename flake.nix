@@ -47,5 +47,24 @@
           default = futlixir;
 
         };
+
+        devShells = rec {
+          futlixir = pkgs.mkShell {
+            buildInputs = [
+              pkgs.erlang
+              pkgs.elixir
+              pkgs.elixir_ls
+              pkgs.opencl-headers
+              pkgs.ocl-icd
+            ];
+
+            shellHook = ''
+              PS1="$PS1(${pname}) "
+            '';
+
+            C_INCLUDE_PATH = "${pkgs.erlang}/lib/erlang/usr/include/";
+          };
+          default = futlixir;
+        };
       });
 }
