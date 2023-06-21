@@ -215,9 +215,15 @@ defmodule Futlixir.NIF do
       ) do
     init_inputs =
       for %{"name" => name, "type" => type, "unique" => _unique} <- inputs do
-        ~s"""
-        #{types[type]["ctype"]}*#{name};
-        """
+        if types[type] do
+          ~s"""
+          #{types[type]["ctype"]}*#{name};
+          """
+        else
+          ~s"""
+          #{to_elemtype_t(type)} #{name};
+          """
+        end
       end
       |> Enum.join("  ")
 
@@ -230,11 +236,19 @@ defmodule Futlixir.NIF do
     get_resources =
       for {%{"name" => name, "type" => type, "unique" => _unique}, i} <-
             Enum.with_index(inputs, 1) do
-        ~s"""
-        if(!enif_get_resource(env, argv[#{i}], #{resource_name(types[type])}, (void**) &#{name})) {
-            return enif_make_badarg(env);
-          }
-        """
+        if types[type] do
+          ~s"""
+          if(!enif_get_resource(env, argv[#{i}], #{resource_name(types[type])}, (void**) &#{name})) {
+              return enif_make_badarg(env);
+            }
+          """
+        else
+          ~s"""
+          if (!#{get_type(type)}(env, argv[#{i}], &#{name})) {
+              return enif_make_badarg(env);
+            }
+          """
+        end
       end
       |> Enum.join("\n  ")
 
@@ -248,8 +262,12 @@ defmodule Futlixir.NIF do
       |> Enum.join("\n  ")
 
     input_names =
-      for %{"name" => name} <- inputs do
-        "*#{name}"
+      for %{"name" => name, "type" => type} <- inputs do
+        if types[type] do
+          "*#{name}"
+        else
+          name
+        end
       end
       |> Enum.join(", ")
 
@@ -284,7 +302,13 @@ defmodule Futlixir.NIF do
   end
 
   def to_elemtype_t("u8"), do: "uint8_t"
+  def to_elemtype_t("u32"), do: "uint32_t"
+  def to_elemtype_t("u64"), do: "uint64_t"
+  def to_elemtype_t("i8"), do: "int8_t"
+  def to_elemtype_t("i32"), do: "int32_t"
   def to_elemtype_t("i64"), do: "int64_t"
+
+  def get_type("i32"), do: "enif_get_int"
 
   def print_nif_resources(device, types) do
     for {_ty, %{"elemtype" => elemtype, "rank" => rank}} <- types do
