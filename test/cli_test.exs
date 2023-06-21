@@ -305,7 +305,6 @@ defmodule CliTest do
              futhark_context_sync(*ctx);
 
              ret = enif_make_binary(env, &binary);
-             enif_release_resource(&binary);
 
              return enif_make_tuple2(env, atom_ok, ret);
            }
@@ -372,7 +371,6 @@ defmodule CliTest do
              futhark_context_sync(*ctx);
 
              ret = enif_make_binary(env, &binary);
-             enif_release_resource(&binary);
 
              return enif_make_tuple2(env, atom_ok, ret);
            }
