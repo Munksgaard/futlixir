@@ -105,7 +105,7 @@ defmodule Futlixir.NIF do
         return enif_make_badarg(env);
       }
 
-      futhark_context_sync(*ctx);
+      if (futhark_context_sync(*ctx) != 0) return enif_make_badarg(env);
 
       return atom_ok;
     }
@@ -194,7 +194,7 @@ defmodule Futlixir.NIF do
       enif_alloc_binary(shape[0] * sizeof(#{elemtype_t}), &binary);
 
       if (#{values}(*ctx, *xs, (#{elemtype_t} *)(binary.data)) != 0) return enif_make_badarg(env);
-      futhark_context_sync(*ctx);
+      if (futhark_context_sync(*ctx) != 0) return enif_make_badarg(env);
 
       ret = enif_make_binary(env, &binary);
 
