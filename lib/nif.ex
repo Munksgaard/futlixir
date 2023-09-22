@@ -160,6 +160,7 @@ defmodule Futlixir.NIF do
 
       #{ctype} tmp = #{new}(*ctx, (const #{elemtype_t} *)bin.data, bin.size / sizeof(#{elemtype_t}));
       const int64_t *shape = #{shape}(*ctx, tmp);
+      if (futhark_context_sync(*ctx) != 0) return enif_make_badarg(env);
 
       *res = tmp;
 
