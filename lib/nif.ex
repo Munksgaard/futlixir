@@ -27,7 +27,7 @@ defmodule Futlixir.NIF do
       int flags = ERL_NIF_RT_CREATE | ERL_NIF_RT_TAKEOVER;
 
       *resource_type = enif_open_resource_type(env, mod, name, NULL, flags, NULL);
-      if(CONFIG_TYPE == NULL) return -1;
+      if(*resource_type == NULL) return -1;
       return 0;
     }
 
