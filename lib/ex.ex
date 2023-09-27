@@ -24,6 +24,10 @@ defmodule Futlixir.EX do
         raise "NIF futhark_context_config_set_debugging not implemented"
       end
 
+      def futhark_context_config_set_logging(_cfg, _flag) do
+        raise "NIF futhark_context_config_set_logging not implemented"
+      end
+
       def futhark_context_new(_cfg) do
         raise "NIF futhark_context_new not implemented"
       end
