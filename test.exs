@@ -1,6 +1,7 @@
 c("lib_map.ex")
 {:ok, cfg} = Map.NIF.futhark_context_config_new()
 :ok = Map.NIF.futhark_context_config_set_debugging(cfg, 1)
+:ok = Map.NIF.futhark_context_config_set_profiling(cfg, 1)
 :ok = Map.NIF.futhark_context_config_set_logging(cfg, 1)
 {:ok, ctx} = Map.NIF.futhark_context_new(cfg)
 
@@ -30,6 +31,7 @@ xs_binary =
    6::integer-signed-32-little>> = zs_binary} = Map.NIF.futhark_i32_1d_to_binary(ctx, zs)
 
 :ok = Map.NIF.futhark_context_config_set_logging(cfg, 0)
+:ok = Map.NIF.futhark_context_config_set_profiling(cfg, 0)
 :ok = Map.NIF.futhark_context_config_set_debugging(cfg, 0)
 
 :ok = Map.NIF.futhark_context_free(ctx)

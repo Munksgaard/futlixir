@@ -108,6 +108,30 @@ defmodule Futlixir.NIF do
       return atom_ok;
     }
 
+    static ERL_NIF_TERM futhark_context_config_set_profiling_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
+    {
+      struct futhark_context_config **cfg;
+
+      ERL_NIF_TERM ret;
+
+      if(argc != 2) {
+        return enif_make_badarg(env);
+      }
+
+      if(!enif_get_resource(env, argv[0], CONFIG_TYPE, (void**) &cfg)) {
+        return enif_make_badarg(env);
+      }
+
+      int flag;
+      if (!enif_get_int(env, argv[1], &flag)) {
+        return enif_make_badarg(env);
+      }
+
+      futhark_context_config_set_profiling(*cfg, flag);
+
+      return atom_ok;
+    }
+
     static ERL_NIF_TERM futhark_context_config_set_logging_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
     {
       struct futhark_context_config **cfg;
@@ -419,6 +443,7 @@ defmodule Futlixir.NIF do
       {"futhark_context_config_new", 0, futhark_context_config_new_nif},
       {"futhark_context_config_free", 1, futhark_context_config_free_nif},
       {"futhark_context_config_set_debugging", 2, futhark_context_config_set_debugging_nif},
+      {"futhark_context_config_set_profiling", 2, futhark_context_config_set_profiling_nif},
       {"futhark_context_config_set_logging", 2, futhark_context_config_set_logging_nif},
       {"futhark_context_new", 1, futhark_context_new_nif},
       {"futhark_context_free", 1, futhark_context_free_nif},
