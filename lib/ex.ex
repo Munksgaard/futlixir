@@ -16,8 +16,16 @@ defmodule Futlixir.EX do
         raise "NIF futhark_context_config_new not implemented"
       end
 
+      def futhark_context_config_free(_cfg) do
+        raise "NIF futhark_context_config_free no implemented"
+      end
+
       def futhark_context_new(_cfg) do
         raise "NIF futhark_context_new not implemented"
+      end
+
+      def futhark_context_free(_cfg) do
+        raise "NIF futhark_context_free not implemented"
       end
 
       def futhark_context_sync(_ctx) do

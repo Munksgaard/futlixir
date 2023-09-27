@@ -65,6 +65,25 @@ defmodule Futlixir.NIF do
       return enif_make_tuple2(env, atom_ok, ret);
     }
 
+    static ERL_NIF_TERM futhark_context_config_free_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
+    {
+      struct futhark_context_config **cfg;
+
+      ERL_NIF_TERM ret;
+
+      if(argc != 1) {
+        return enif_make_badarg(env);
+      }
+
+      if(!enif_get_resource(env, argv[0], CONFIG_TYPE, (void**) &cfg)) {
+        return enif_make_badarg(env);
+      }
+
+      futhark_context_config_free(*cfg);
+
+      return atom_ok;
+    }
+
     static ERL_NIF_TERM futhark_context_new_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
     {
       struct futhark_context_config **cfg;
@@ -91,6 +110,23 @@ defmodule Futlixir.NIF do
       enif_release_resource(res);
 
       return enif_make_tuple2(env, atom_ok, ret);
+    }
+
+    static ERL_NIF_TERM futhark_context_free_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
+    {
+      struct futhark_context **ctx;
+
+      if(argc != 1) {
+        return enif_make_badarg(env);
+      }
+
+      if(!enif_get_resource(env, argv[0], CONTEXT_TYPE, (void**) &ctx)) {
+        return enif_make_badarg(env);
+      }
+
+      futhark_context_free(*ctx);
+
+      return atom_ok;
     }
 
     static ERL_NIF_TERM futhark_context_sync_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
@@ -333,7 +369,9 @@ defmodule Futlixir.NIF do
     IO.puts(device, ~s"""
     static ErlNifFunc nif_funcs[] = {
       {"futhark_context_config_new", 0, futhark_context_config_new_nif},
+      {"futhark_context_config_free", 1, futhark_context_config_free_nif},
       {"futhark_context_new", 1, futhark_context_new_nif},
+      {"futhark_context_free", 1, futhark_context_free_nif},
     """)
 
     for {_ty, details} <- types do
