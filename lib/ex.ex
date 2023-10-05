@@ -46,7 +46,61 @@ defmodule Futlixir.EX do
     """
   end
 
-  def new_array_type(%{
+  def new_type(
+        %{
+          "ctype" => _ctype,
+          "kind" => "opaque",
+          "ops" => %{"free" => _free, "restore" => _restore, "store" => _store},
+          "record" => record
+        } = params
+      ) do
+    record_projections =
+      for projection <- record["fields"] do
+        ~s"""
+          def #{projection["project"]}(_ctx, _record) do
+            raise "NIF #{projection["project"]} not implemented"
+          end
+        """
+      end
+      |> Enum.join("\n\n")
+
+    new_args =
+      record["fields"]
+      |> Enum.map(&"_#{&1["name"]}")
+      |> Enum.join(", ")
+
+    ~s"""
+    #{new_type(Map.delete(params, "record"))}
+
+      def #{record["new"]}(_ctx, #{new_args}) do
+        raise "NIF #{record["new"]} not implemented"
+      end
+
+    #{record_projections}
+    """
+  end
+
+  def new_type(%{
+        "ctype" => _ctype,
+        "kind" => "opaque",
+        "ops" => %{"free" => free, "restore" => restore, "store" => store}
+      }) do
+    ~s"""
+      def #{free}(_ctx, _opaque) do
+        raise "NIF #{free} not implemented"
+      end
+
+      def #{store}(_ctx, _opaque) do
+        raise "NIF #{store} not implemented"
+      end
+
+      def #{restore}(_ctx, _binary) do
+        raise "NIF #{restore} not implemented"
+      end
+    """
+  end
+
+  def new_type(%{
         "ctype" => _ctype,
         "elemtype" => elemtype,
         "kind" => "array",
@@ -87,7 +141,7 @@ defmodule Futlixir.EX do
 
   defp print_array_types(device, types) do
     for {_ty, details} <- types do
-      IO.puts(device, Futlixir.EX.new_array_type(details))
+      IO.puts(device, Futlixir.EX.new_type(details))
     end
   end
 

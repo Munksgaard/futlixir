@@ -231,14 +231,23 @@ defmodule Futlixir.NIF do
   def resource_name(%{"elemtype" => elemtype, "rank" => rank}),
     do: String.upcase("#{elemtype}_#{rank}d")
 
-  def new_array_type(%{
-        "ctype" => ctype,
-        "elemtype" => elemtype,
-        "kind" => "array",
-        "ops" => %{"free" => _free, "shape" => shape, "values" => values, "new" => new},
-        "rank" => rank
-      }) do
-    resource_name = String.upcase("#{elemtype}_#{rank}d")
+  def resource_name(%{"ctype" => ctype}) do
+    ~r{^struct (?<name>[^ ]+) \*$}
+    |> Regex.named_captures(ctype)
+    |> Map.fetch!("name")
+    |> String.upcase()
+  end
+
+  def new_type(
+        %{
+          "ctype" => ctype,
+          "elemtype" => elemtype,
+          "kind" => "array",
+          "ops" => %{"free" => _free, "shape" => shape, "values" => values, "new" => new},
+          "rank" => rank
+        } = params,
+        _types
+      ) do
     elemtype_t = to_elemtype_t(elemtype)
     to_binary = "futhark_#{elemtype}_#{rank}d_to_binary_nif"
 
@@ -263,7 +272,7 @@ defmodule Futlixir.NIF do
         return enif_make_badarg(env);
       }
 
-      res = enif_alloc_resource(#{resource_name}, sizeof(#{ctype}));
+      res = enif_alloc_resource(#{resource_name(params)}, sizeof(#{ctype}));
       if(res == NULL) return enif_make_badarg(env);
 
       #{ctype} tmp = #{new}(*ctx, (const #{elemtype_t} *)bin.data, bin.size / sizeof(#{elemtype_t}));
@@ -294,7 +303,7 @@ defmodule Futlixir.NIF do
         return enif_make_badarg(env);
       }
 
-      if(!enif_get_resource(env, argv[1], #{resource_name}, (void**) &xs)) {
+      if(!enif_get_resource(env, argv[1], #{resource_name(params)}, (void**) &xs)) {
         return enif_make_badarg(env);
       }
 
@@ -306,6 +315,205 @@ defmodule Futlixir.NIF do
       if (futhark_context_sync(*ctx) != 0) return enif_make_badarg(env);
 
       ret = enif_make_binary(env, &binary);
+
+      return enif_make_tuple2(env, atom_ok, ret);
+    }
+    """
+  end
+
+  def new_type(
+        %{
+          "ctype" => ctype,
+          "kind" => "opaque",
+          "ops" => _ops,
+          "record" => record
+        } = params,
+        types
+      ) do
+    get_args =
+      record["fields"]
+      |> Enum.with_index()
+      |> Enum.map(fn {field, i} ->
+        ~s"""
+        #{types[field["type"]]["ctype"]} *#{field["name"]};
+          if (!enif_get_resource(env, argv[#{i + 1}], #{resource_name(types[field["type"]])}, (void**) &#{field["name"]})) {
+            return enif_make_badarg(env);
+          }
+        """
+      end)
+      |> Enum.join("\n  ")
+
+    ~s"""
+    #{new_type(Map.delete(params, "record"), types)}
+
+    static ERL_NIF_TERM #{record["new"]}_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
+    {
+      struct futhark_context **ctx;
+
+      #{ctype}*res;
+      ERL_NIF_TERM ret;
+
+      if(argc != #{length(record["fields"]) + 1}) {
+        return enif_make_badarg(env);
+      }
+
+      if(!enif_get_resource(env, argv[0], CONTEXT_TYPE, (void**) &ctx)) {
+        return enif_make_badarg(env);
+      }
+
+      #{get_args}
+
+      res = enif_alloc_resource(#{resource_name(params)}, sizeof(#{ctype}));
+      if(res == NULL) return enif_make_badarg(env);
+
+      if (!#{record["new"]}(*ctx, res, #{record["fields"] |> Enum.map(&"*#{&1["name"]}") |> Enum.join(", ")})) {
+        return enif_make_badarg(env);
+      }
+
+      ret = enif_make_resource(env, res);
+      enif_release_resource(res);
+
+      return enif_make_tuple2(env, atom_ok, ret);
+    }
+
+    #{record["fields"] |> Enum.map(&record_projection(&1, params, types)) |> Enum.join("\n\n")}
+    """
+  end
+
+  def new_type(
+        %{
+          "ctype" => ctype,
+          "kind" => "opaque",
+          "ops" => ops
+        } = params,
+        _types
+      ) do
+    ~s"""
+    static ERL_NIF_TERM #{ops["free"]}_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
+    {
+      struct futhark_context **ctx;
+      ErlNifBinary bin;
+
+      #{ctype}*res;
+      ERL_NIF_TERM ret;
+
+      if(argc != 2) {
+        return enif_make_badarg(env);
+      }
+
+      if(!enif_get_resource(env, argv[0], CONTEXT_TYPE, (void**) &ctx)) {
+        return enif_make_badarg(env);
+      }
+
+      if(!enif_get_resource(env, argv[1], #{resource_name(params)}, (void**) &res)) {
+        return enif_make_badarg(env);
+      }
+
+      if(#{ops["free"]}(*ctx, *res) != 0) return enif_make_badarg(env);
+
+      return atom_ok;
+    }
+
+    static ERL_NIF_TERM #{ops["store"]}_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
+    {
+      struct futhark_context **ctx;
+      #{ctype}*xs;
+
+      ErlNifBinary binary;
+      ERL_NIF_TERM ret;
+
+      if(argc != 2) {
+        return enif_make_badarg(env);
+      }
+
+      if(!enif_get_resource(env, argv[0], CONTEXT_TYPE, (void**) &ctx)) {
+        return enif_make_badarg(env);
+      }
+
+      if(!enif_get_resource(env, argv[1], #{resource_name(params)}, (void**) &xs)) {
+        return enif_make_badarg(env);
+      }
+
+      size_t n;
+      #{ops["store"]}(*ctx, *xs, NULL, &n);
+
+      enif_alloc_binary(n, &binary);
+
+      if (#{ops["store"]}(*ctx, *xs, (void**)&binary.data, &n) != 0) return enif_make_badarg(env);
+
+      ret = enif_make_binary(env, &binary);
+
+      return enif_make_tuple2(env, atom_ok, ret);
+    }
+
+    static ERL_NIF_TERM #{ops["restore"]}_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
+    {
+      struct futhark_context **ctx;
+
+      #{ctype}*res;
+      ErlNifBinary binary;
+      ERL_NIF_TERM ret;
+
+      if(argc != 2) {
+        return enif_make_badarg(env);
+      }
+
+      if(!enif_get_resource(env, argv[0], CONTEXT_TYPE, (void**) &ctx)) {
+        return enif_make_badarg(env);
+      }
+
+      if (!enif_inspect_binary(env, argv[1], &binary)) {
+        return enif_make_badarg(env);
+      }
+
+      #{ctype} tmp = #{ops["restore"]}(*ctx, binary.data);
+      if (futhark_context_sync(*ctx) != 0) return enif_make_badarg(env);
+
+      res = enif_alloc_resource(#{resource_name(params)}, sizeof(#{ctype}));
+      if(res == NULL) return enif_make_badarg(env);
+
+      *res = tmp;
+
+      ret = enif_make_resource(env, res);
+      enif_release_resource(res);
+
+      return enif_make_tuple2(env, atom_ok, ret);
+    }
+    """
+  end
+
+  def record_projection(%{"project" => project, "type" => type}, opaque, types) do
+    ~s"""
+    static ERL_NIF_TERM #{project}_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
+    {
+      struct futhark_context **ctx;
+
+      #{opaque["ctype"]}*opaque;
+
+      #{types[type]["ctype"]}*res;
+      ERL_NIF_TERM ret;
+
+      if(argc != 2) {
+        return enif_make_badarg(env);
+      }
+
+      if(!enif_get_resource(env, argv[0], CONTEXT_TYPE, (void**) &ctx)) {
+        return enif_make_badarg(env);
+      }
+
+      if(!enif_get_resource(env, argv[1], #{resource_name(opaque)}, (void**) &opaque)) {
+        return enif_make_badarg(env);
+      }
+
+      res = enif_alloc_resource(#{resource_name(types[type])}, sizeof(#{types[type]["ctype"]}));
+      if(res == NULL) return enif_make_badarg(env);
+
+      if (!#{project}(*ctx, res, *opaque)) {
+        return enif_make_badarg(env);
+      }
+
+      ret = enif_make_resource(env, res);
+      enif_release_resource(res);
 
       return enif_make_tuple2(env, atom_ok, ret);
     }
@@ -415,25 +623,59 @@ defmodule Futlixir.NIF do
   def to_elemtype_t("i8"), do: "int8_t"
   def to_elemtype_t("i32"), do: "int32_t"
   def to_elemtype_t("i64"), do: "int64_t"
+  def to_elemtype_t("f64"), do: "double"
 
+  def get_type("u32"), do: "enif_get_uint"
+  def get_type("u64"), do: "enif_get_uint64"
   def get_type("i32"), do: "enif_get_int"
+  def get_type("i64"), do: "enif_get_int64"
+  def get_type("f64"), do: "enif_get_double"
 
   def print_nif_resources(device, types) do
-    for {_ty, %{"elemtype" => elemtype, "rank" => rank}} <- types do
-      resource_name = String.upcase("#{elemtype}_#{rank}d")
-      IO.puts(device, "ErlNifResourceType* #{resource_name};")
+    for {_ty, desc} <- types do
+      IO.puts(device, "ErlNifResourceType* #{resource_name(desc)};")
     end
   end
 
   defp print_nif_array_types(device, types) do
     for {_ty, details} <- types do
-      IO.puts(device, Futlixir.NIF.new_array_type(details))
+      IO.puts(device, Futlixir.NIF.new_type(details, types))
     end
   end
 
   defp print_nif_entry_points(device, entry_points, types) do
     for {_name, details} <- entry_points do
       IO.puts(device, Futlixir.NIF.new_entry_point(details, types))
+    end
+  end
+
+  defp nif_funcs({_ty, %{"kind" => "array"} = details}) do
+    to_binary = "futhark_#{details["elemtype"]}_#{details["rank"]}d_to_binary"
+
+    ~s"""
+      {"#{details["ops"]["new"]}", 2, #{details["ops"]["new"]}_nif},
+      {"#{to_binary}", 2, #{to_binary}_nif},
+    """
+  end
+
+  defp nif_funcs({_ty, %{"kind" => "opaque"} = details}) do
+    result = ~s"""
+      {"#{details["ops"]["free"]}", 2, #{details["ops"]["free"]}_nif},
+      {"#{details["ops"]["restore"]}", 2, #{details["ops"]["restore"]}_nif},
+      {"#{details["ops"]["store"]}", 2, #{details["ops"]["store"]}_nif},
+    """
+
+    if record = details["record"] do
+      ~s"""
+      #{result}
+        {"#{record["new"]}", #{length(record["fields"]) + 1}, #{record["new"]}_nif},
+      """ <>
+        (Enum.map(record["fields"], fn field ->
+           ~s[  {"#{field["project"]}", 2, #{field["project"]}_nif},]
+         end)
+         |> Enum.join("\n"))
+    else
+      result
     end
   end
 
@@ -449,10 +691,8 @@ defmodule Futlixir.NIF do
       {"futhark_context_free", 1, futhark_context_free_nif},
     """)
 
-    for {_ty, details} <- types do
-      to_binary = "futhark_#{details["elemtype"]}_#{details["rank"]}d_to_binary"
-      IO.puts(device, "  {\"#{details["ops"]["new"]}\", 2, #{details["ops"]["new"]}_nif},")
-      IO.puts(device, "  {\"#{to_binary}\", 2, #{to_binary}_nif},")
+    for details <- types do
+      IO.puts(device, nif_funcs(details))
     end
 
     for {_name, details} <- entry_points do
