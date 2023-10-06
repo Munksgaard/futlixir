@@ -104,7 +104,7 @@ defmodule Futlixir.EX do
         "ctype" => _ctype,
         "elemtype" => elemtype,
         "kind" => "array",
-        "ops" => %{"free" => _free, "shape" => _shape, "values" => _values, "new" => new},
+        "ops" => %{"free" => free, "shape" => _shape, "values" => _values, "new" => new},
         "rank" => rank
       }) do
     to_binary = "futhark_#{elemtype}_#{rank}d_to_binary"
@@ -116,6 +116,10 @@ defmodule Futlixir.EX do
 
       def #{to_binary}(_ctx, _in) do
         raise "NIF #{to_binary} not implemented"
+      end
+
+      def #{free}(_ctx, _in) do
+        raise "NIF #{free} not implemented"
       end
     """
   end

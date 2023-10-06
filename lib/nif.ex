@@ -243,7 +243,7 @@ defmodule Futlixir.NIF do
           "ctype" => ctype,
           "elemtype" => elemtype,
           "kind" => "array",
-          "ops" => %{"free" => _free, "shape" => shape, "values" => values, "new" => new},
+          "ops" => %{"free" => free, "shape" => shape, "values" => values, "new" => new},
           "rank" => rank
         } = params,
         _types
@@ -317,6 +317,28 @@ defmodule Futlixir.NIF do
       ret = enif_make_binary(env, &binary);
 
       return enif_make_tuple2(env, atom_ok, ret);
+    }
+
+    static ERL_NIF_TERM #{free}_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
+    {
+      struct futhark_context **ctx;
+      #{ctype}*xs;
+
+      if(argc != 2) {
+        return enif_make_badarg(env);
+      }
+
+      if(!enif_get_resource(env, argv[0], CONTEXT_TYPE, (void**) &ctx)) {
+        return enif_make_badarg(env);
+      }
+
+      if(!enif_get_resource(env, argv[1], #{resource_name(params)}, (void**) &xs)) {
+        return enif_make_badarg(env);
+      }
+
+      if (#{free}(*ctx, *xs) != 0) return enif_make_badarg(env);
+
+      return atom_ok;
     }
     """
   end
@@ -655,6 +677,7 @@ defmodule Futlixir.NIF do
     ~s"""
       {"#{details["ops"]["new"]}", 2, #{details["ops"]["new"]}_nif},
       {"#{to_binary}", 2, #{to_binary}_nif},
+      {"#{details["ops"]["free"]}", 2, #{details["ops"]["free"]}_nif},
     """
   end
 

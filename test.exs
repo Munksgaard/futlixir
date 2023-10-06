@@ -30,6 +30,8 @@ xs_binary =
  <<3::integer-signed-32-little, 4::integer-signed-32-little, 5::integer-signed-32-little,
    6::integer-signed-32-little>> = zs_binary} = Map.NIF.futhark_i32_1d_to_binary(ctx, zs)
 
+:ok = Map.NIF.futhark_free_i32_1d(ctx, xs)
+
 :ok = Map.NIF.futhark_context_config_set_logging(cfg, 0)
 :ok = Map.NIF.futhark_context_config_set_profiling(cfg, 0)
 :ok = Map.NIF.futhark_context_config_set_debugging(cfg, 0)
