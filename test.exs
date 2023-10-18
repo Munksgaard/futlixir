@@ -48,15 +48,23 @@ xs_binary =
 :ok = Map.NIF.futhark_free_u8_2d(ctx, zs)
 
 
-{:ok, xs} = Map.NIF.futhark_new_f64_2d(ctx, <<1.1::float-little, 2.1::float-little, 3.1::float-little, 4.123::float-little>>, 2, 2)
-{:ok, <<1.1::float-little, 2.1::float-little, 3.1::float-little, 4.123::float-little>>} = Map.NIF.futhark_f64_2d_to_binary(ctx, xs)
+{:ok, xs} = Map.NIF.futhark_i32_1d_from_list(ctx, [42, 43])
+{:ok, zs} = Map.NIF.futhark_entry_addi(ctx, xs, 2)
+{:ok, [44, 45]} = Map.NIF.futhark_i32_1d_to_list(ctx, zs)
 
+:ok = Map.NIF.futhark_free_i32_1d(ctx, xs)
+:ok = Map.NIF.futhark_free_i32_1d(ctx, zs)
 
-{:ok, ys} = Map.NIF.futhark_new_f64_2d(ctx, <<42.1::float-little, 5.1::float-little, 23.4::float-little, 43.0::float-little>>, 2, 2)
-{:ok, zs} = Map.NIF.futhark_entry_matmul(ctx, xs, ys)
+{:ok, xs} = Map.NIF.futhark_f64_2d_from_list(ctx, [[1.0, 2.0, 3.0], [4, 5, 6], [7, 8, 9]])
+{:ok, [3, 3]} = Map.NIF.futhark_shape_f64_2d(ctx, xs)
+{:ok, zs} = Map.NIF.futhark_entry_matmul(ctx, xs, xs)
 
-{:ok, <<68.7::float-little, 51.3::float-little, 72.723::float-little, 55.32299999999999::float-little>>} = Map.NIF.futhark_f64_2d_to_binary(ctx, zs)
+{:ok, [[30.0, 36.0, 42.0], [66.0, 81.0, 96.0], [102.0, 126.0, 150.0]]} = Map.NIF.futhark_f64_2d_to_list(ctx, zs)
 
 :ok = Map.NIF.futhark_free_f64_2d(ctx, xs)
-:ok = Map.NIF.futhark_free_f64_2d(ctx, ys)
 :ok = Map.NIF.futhark_free_f64_2d(ctx, zs)
+
+# TODO: Add tests for opaque: new, store, restore, projection
+
+:ok = Map.NIF.futhark_context_free(ctx)
+:ok = Map.NIF.futhark_context_config_free(cfg)

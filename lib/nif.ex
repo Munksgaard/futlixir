@@ -289,7 +289,7 @@ defmodule Futlixir.NIF do
       res = enif_alloc_resource(#{resource_name(params)}, sizeof(#{ctype}));
       if(res == NULL) return enif_make_badarg(env);
 
-      if(bin.size / sizeof(#{elemtype_t}) != #{dims |> Enum.join(" + ")}) {
+      if(bin.size / sizeof(#{elemtype_t}) != #{dims |> Enum.join(" * ")}) {
         return enif_make_badarg(env);
       }
 
@@ -333,6 +333,35 @@ defmodule Futlixir.NIF do
       if (futhark_context_sync(*ctx) != 0) return enif_make_badarg(env);
 
       ret = enif_make_binary(env, &binary);
+
+      return enif_make_tuple2(env, atom_ok, ret);
+    }
+
+    static ERL_NIF_TERM #{shape}_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
+    {
+      struct futhark_context **ctx;
+      #{ctype}*xs;
+
+      ErlNifBinary binary;
+      ERL_NIF_TERM ret;
+
+      if(argc != 2) {
+        return enif_make_badarg(env);
+      }
+
+      if(!enif_get_resource(env, argv[0], CONTEXT_TYPE, (void**) &ctx)) {
+        return enif_make_badarg(env);
+      }
+
+      if(!enif_get_resource(env, argv[1], #{resource_name(params)}, (void**) &xs)) {
+        return enif_make_badarg(env);
+      }
+
+      const int64_t *shape = #{shape}(*ctx, *xs);
+
+      #{1..rank |> Enum.map(&"ERL_NIF_TERM dim#{&1-1} = enif_make_int64(env, shape[#{&1 - 1}]);") |> Enum.join("\n  ")}
+
+      ret = enif_make_list(env, #{rank}, #{Enum.join(dims, ", ")});
 
       return enif_make_tuple2(env, atom_ok, ret);
     }
@@ -695,6 +724,7 @@ defmodule Futlixir.NIF do
     ~s"""
       {"#{details["ops"]["new"]}", #{details["rank"] + 2}, #{details["ops"]["new"]}_nif},
       {"#{to_binary}", 2, #{to_binary}_nif},
+      {"#{details["ops"]["shape"]}", 2, #{details["ops"]["shape"]}_nif},
       {"#{details["ops"]["free"]}", 2, #{details["ops"]["free"]}_nif},
     """
   end

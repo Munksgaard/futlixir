@@ -1,3 +1,9 @@
+-- ==
+-- entry: matmul
+-- input { [[1.0f64, 2.0f64, 3.0f64], [4.0f64, 5.0f64, 6.0f64], [7.0f64, 8.0f64, 9.0f64]] [[1.0f64, 2.0f64, 3.0f64], [4.0f64, 5.0f64, 6.0f64], [7.0f64, 8.0f64, 9.0f64]] }
+-- output { [[30.0f64, 36.0f64, 42.0f64], [66.0f64, 81.0f64, 96.0f64], [102.0f64, 126.0f64, 150.0f64]] }
+
+
 entry add [n] (xs: [n]u8) (ys: [n]u8): [n]u8 =
   map2 (+) xs ys
 
@@ -22,7 +28,7 @@ entry to_xs [n] (points: [n]point): [n]f64 =
   map (.x) points
 
 def dotprod [n] (xs: [n]f64) (ys: [n]f64): f64 =
-  map2 (+) xs ys
+  map2 (*) xs ys
   |> reduce (+) 0
 
 entry matmul [n][m][p] (a: [n][m]f64) (b: [m][p]f64): [n][p]f64 =

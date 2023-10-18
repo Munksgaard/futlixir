@@ -43,6 +43,17 @@ defmodule Futlixir.EX do
       def futhark_context_sync(_ctx) do
         raise "NIF futhark_context_sync not implemented"
       end
+
+      defp shape(xs), do: shape(xs, {})
+      defp shape([], acc), do: acc
+      defp shape([h|_] = xs, acc) do
+        acc = Tuple.append(acc, length(xs))
+        if is_list(h) do
+          shape(h, acc)
+        else
+          acc
+        end
+      end
     """
   end
 
@@ -104,13 +115,16 @@ defmodule Futlixir.EX do
         "ctype" => _ctype,
         "elemtype" => elemtype,
         "kind" => "array",
-        "ops" => %{"free" => free, "shape" => _shape, "values" => _values, "new" => new},
+        "ops" => %{"free" => free, "shape" => shape, "values" => _values, "new" => new},
         "rank" => rank
       }) do
     to_binary = "futhark_#{elemtype}_#{rank}d_to_binary"
+    from_list = "futhark_#{elemtype}_#{rank}d_from_list"
+    to_list = "futhark_#{elemtype}_#{rank}d_to_list"
+    dims = Enum.map(1..rank, &"dim#{&1-1}")
 
     ~s"""
-      def #{new}(_ctx, _binary, #{1..rank |> Enum.map(&"_dim#{&1}") |> Enum.join(", ")}) do
+      def #{new}(_ctx, _binary, #{dims |> Enum.map(&"_#{&1}") |> Enum.join(", ")}) do
         raise "NIF #{new} not implemented"
       end
 
@@ -118,8 +132,50 @@ defmodule Futlixir.EX do
         raise "NIF #{to_binary} not implemented"
       end
 
+      def #{shape}(_ctx, _in) do
+        raise "NIF #{shape} not implemented"
+      end
+
       def #{free}(_ctx, _in) do
         raise "NIF #{free} not implemented"
+      end
+
+      def #{from_list}(ctx, xs) do
+        {#{Enum.join(dims, ", ")}} = shape(xs)
+        #{new}(ctx, #{from_list}_helper(xs, <<>>), #{Enum.join(dims, ", ")})
+      end
+
+      def #{from_list}_helper([], acc), do: acc
+
+      def #{from_list}_helper([h|t], acc) when is_list(h) do
+        #{from_list}_helper(t, #{from_list}_helper(h, acc))
+      end
+
+      def #{from_list}_helper([h|t], acc) do
+        #{from_list}_helper(t, <<acc::binary, h::#{type_to_binary(elemtype)}>>)
+      end
+
+      def #{to_list}(ctx, ref) do
+        {:ok, dims} = #{shape}(ctx, ref)
+        {:ok, bin} = #{to_binary}(ctx, ref)
+        {res, <<>>} = #{to_list}_helper(dims, [], bin)
+        {:ok, res}
+      end
+
+      def #{to_list}_helper(0, acc, bin), do: {Enum.reverse(acc), bin}
+
+      def #{to_list}_helper(i, acc, <<h::#{type_to_binary(elemtype)}, t::binary>>)
+          when is_integer(i) and i > 0 do
+        #{to_list}_helper(i-1, [h|acc], t)
+      end
+
+      def #{to_list}_helper([i], acc, bin), do: #{to_list}_helper(i, acc, bin)
+
+      def #{to_list}_helper([0|_], acc, bin), do: {Enum.reverse(acc), bin}
+
+      def #{to_list}_helper([i|t], acc, bin) do
+        {inner, bin} = #{to_list}_helper(t, [], bin)
+        #{to_list}_helper([i-1|t], [inner|acc], bin)
       end
     """
   end
@@ -148,6 +204,14 @@ defmodule Futlixir.EX do
       IO.puts(device, Futlixir.EX.new_type(details))
     end
   end
+
+  def type_to_binary("f64"), do: "float-little"
+  def type_to_binary("i8"), do: "integer-signed-8-little"
+  def type_to_binary("i32"), do: "integer-signed-32-little"
+  def type_to_binary("i64"), do: "integer-signed-64-little"
+  def type_to_binary("u8"), do: "integer-unsigned-8-little"
+  def type_to_binary("u32"), do: "integer-unsigned-32-little"
+  def type_to_binary("u64"), do: "integer-unsigned-64-little"
 
   def write_ex_file(rootname, module_name, manifest) do
     with {:ok, ex_file} <- File.open(rootname <> ".ex", [:write]) do
