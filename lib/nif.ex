@@ -251,6 +251,16 @@ defmodule Futlixir.NIF do
     elemtype_t = to_elemtype_t(elemtype)
     to_binary = "futhark_#{elemtype}_#{rank}d_to_binary_nif"
 
+    dims = Enum.map(1..rank, &"dim#{&1 - 1}")
+
+    init_dims = fn {dim, i} ->
+      ~s"""
+      if (!enif_get_int64(env, argv[#{i + 2}], &#{dim})) {
+        return enif_make_badarg(env);
+      }
+      """
+    end
+
     ~s"""
     static ERL_NIF_TERM #{new}_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
     {
@@ -260,9 +270,13 @@ defmodule Futlixir.NIF do
       #{ctype}*res;
       ERL_NIF_TERM ret;
 
-      if(argc != 2) {
+      if(argc != #{rank + 2}) {
         return enif_make_badarg(env);
       }
+
+      int64_t #{Enum.join(dims, ", ")};
+
+      #{Enum.with_index(dims) |> Enum.map(init_dims) |> Enum.join("\n  ")}
 
       if(!enif_get_resource(env, argv[0], CONTEXT_TYPE, (void**) &ctx)) {
         return enif_make_badarg(env);
@@ -275,7 +289,11 @@ defmodule Futlixir.NIF do
       res = enif_alloc_resource(#{resource_name(params)}, sizeof(#{ctype}));
       if(res == NULL) return enif_make_badarg(env);
 
-      #{ctype} tmp = #{new}(*ctx, (const #{elemtype_t} *)bin.data, bin.size / sizeof(#{elemtype_t}));
+      if(bin.size / sizeof(#{elemtype_t}) != #{dims |> Enum.join(" + ")}) {
+        return enif_make_badarg(env);
+      }
+
+      #{ctype} tmp = #{new}(*ctx, (const #{elemtype_t} *)bin.data, #{Enum.join(dims, ", ")});
       const int64_t *shape = #{shape}(*ctx, tmp);
       if (futhark_context_sync(*ctx) != 0) return enif_make_badarg(env);
 
@@ -309,7 +327,7 @@ defmodule Futlixir.NIF do
 
       const int64_t *shape = #{shape}(*ctx, *xs);
 
-      enif_alloc_binary(shape[0] * sizeof(#{elemtype_t}), &binary);
+      enif_alloc_binary(#{1..rank |> Enum.map(&"shape[#{&1 - 1}]") |> Enum.join(" * ")} * sizeof(#{elemtype_t}), &binary);
 
       if (#{values}(*ctx, *xs, (#{elemtype_t} *)(binary.data)) != 0) return enif_make_badarg(env);
       if (futhark_context_sync(*ctx) != 0) return enif_make_badarg(env);
@@ -675,7 +693,7 @@ defmodule Futlixir.NIF do
     to_binary = "futhark_#{details["elemtype"]}_#{details["rank"]}d_to_binary"
 
     ~s"""
-      {"#{details["ops"]["new"]}", 2, #{details["ops"]["new"]}_nif},
+      {"#{details["ops"]["new"]}", #{details["rank"] + 2}, #{details["ops"]["new"]}_nif},
       {"#{to_binary}", 2, #{to_binary}_nif},
       {"#{details["ops"]["free"]}", 2, #{details["ops"]["free"]}_nif},
     """

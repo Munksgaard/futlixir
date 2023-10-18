@@ -110,7 +110,7 @@ defmodule Futlixir.EX do
     to_binary = "futhark_#{elemtype}_#{rank}d_to_binary"
 
     ~s"""
-      def #{new}(_ctx, _binary) do
+      def #{new}(_ctx, _binary, #{1..rank |> Enum.map(&"_dim#{&1}") |> Enum.join(", ")}) do
         raise "NIF #{new} not implemented"
       end
 
