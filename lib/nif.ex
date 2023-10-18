@@ -276,7 +276,7 @@ defmodule Futlixir.NIF do
 
       int64_t #{Enum.join(dims, ", ")};
 
-      #{Enum.with_index(dims) |> Enum.map(init_dims) |> Enum.join("\n  ")}
+      #{Enum.with_index(dims) |> Enum.map_join("\n  ", init_dims)}
 
       if(!enif_get_resource(env, argv[0], CONTEXT_TYPE, (void**) &ctx)) {
         return enif_make_badarg(env);
@@ -327,7 +327,7 @@ defmodule Futlixir.NIF do
 
       const int64_t *shape = #{shape}(*ctx, *xs);
 
-      enif_alloc_binary(#{1..rank |> Enum.map(&"shape[#{&1 - 1}]") |> Enum.join(" * ")} * sizeof(#{elemtype_t}), &binary);
+      enif_alloc_binary(#{1..rank |> Enum.map_join(" * ", &"shape[#{&1 - 1}]")} * sizeof(#{elemtype_t}), &binary);
 
       if (#{values}(*ctx, *xs, (#{elemtype_t} *)(binary.data)) != 0) return enif_make_badarg(env);
       if (futhark_context_sync(*ctx) != 0) return enif_make_badarg(env);
@@ -359,7 +359,7 @@ defmodule Futlixir.NIF do
 
       const int64_t *shape = #{shape}(*ctx, *xs);
 
-      #{1..rank |> Enum.map(&"ERL_NIF_TERM dim#{&1-1} = enif_make_int64(env, shape[#{&1 - 1}]);") |> Enum.join("\n  ")}
+      #{1..rank |> Enum.map_join("\n  ", &"ERL_NIF_TERM dim#{&1 - 1} = enif_make_int64(env, shape[#{&1 - 1}]);")}
 
       ret = enif_make_list(env, #{rank}, #{Enum.join(dims, ", ")});
 
@@ -402,7 +402,7 @@ defmodule Futlixir.NIF do
     get_args =
       record["fields"]
       |> Enum.with_index()
-      |> Enum.map(fn {field, i} ->
+      |> Enum.map_join("\n  ", fn {field, i} ->
         ~s"""
         #{types[field["type"]]["ctype"]} *#{field["name"]};
           if (!enif_get_resource(env, argv[#{i + 1}], #{resource_name(types[field["type"]])}, (void**) &#{field["name"]})) {
@@ -410,7 +410,6 @@ defmodule Futlixir.NIF do
           }
         """
       end)
-      |> Enum.join("\n  ")
 
     ~s"""
     #{new_type(Map.delete(params, "record"), types)}
@@ -435,7 +434,7 @@ defmodule Futlixir.NIF do
       res = enif_alloc_resource(#{resource_name(params)}, sizeof(#{ctype}));
       if(res == NULL) return enif_make_badarg(env);
 
-      if (!#{record["new"]}(*ctx, res, #{record["fields"] |> Enum.map(&"*#{&1["name"]}") |> Enum.join(", ")})) {
+      if (!#{record["new"]}(*ctx, res, #{record["fields"] |> Enum.map_join(", ", &"*#{&1["name"]}")})) {
         return enif_make_badarg(env);
       }
 
@@ -445,7 +444,7 @@ defmodule Futlixir.NIF do
       return enif_make_tuple2(env, atom_ok, ret);
     }
 
-    #{record["fields"] |> Enum.map(&record_projection(&1, params, types)) |> Enum.join("\n\n")}
+    #{record["fields"] |> Enum.map_join("\n\n", &record_projection(&1, params, types))}
     """
   end
 
@@ -741,10 +740,9 @@ defmodule Futlixir.NIF do
       #{result}
         {"#{record["new"]}", #{length(record["fields"]) + 1}, #{record["new"]}_nif},
       """ <>
-        (Enum.map(record["fields"], fn field ->
-           ~s[  {"#{field["project"]}", 2, #{field["project"]}_nif},]
-         end)
-         |> Enum.join("\n"))
+        Enum.map_join(record["fields"], "\n", fn field ->
+          ~s[  {"#{field["project"]}", 2, #{field["project"]}_nif},]
+        end)
     else
       result
     end

@@ -75,10 +75,7 @@ defmodule Futlixir.EX do
       end
       |> Enum.join("\n\n")
 
-    new_args =
-      record["fields"]
-      |> Enum.map(&"_#{&1["name"]}")
-      |> Enum.join(", ")
+    new_args = Enum.map_join(record["fields"], ", ", &"_#{&1["name"]}")
 
     ~s"""
     #{new_type(Map.delete(params, "record"))}
@@ -121,10 +118,10 @@ defmodule Futlixir.EX do
     to_binary = "futhark_#{elemtype}_#{rank}d_to_binary"
     from_list = "futhark_#{elemtype}_#{rank}d_from_list"
     to_list = "futhark_#{elemtype}_#{rank}d_to_list"
-    dims = Enum.map(1..rank, &"dim#{&1-1}")
+    dims = Enum.map(1..rank, &"dim#{&1 - 1}")
 
     ~s"""
-      def #{new}(_ctx, _binary, #{dims |> Enum.map(&"_#{&1}") |> Enum.join(", ")}) do
+      def #{new}(_ctx, _binary, #{Enum.map_join(dims, ", ", &"_#{&1}")}) do
         raise "NIF #{new} not implemented"
       end
 
