@@ -145,13 +145,13 @@ defmodule Futlixir.EX do
         #{new}(ctx, #{from_list}_helper(xs, <<>>), #{Enum.join(dims, ", ")})
       end
 
-      def #{from_list}_helper([], acc), do: acc
+      defp #{from_list}_helper([], acc), do: acc
 
-      def #{from_list}_helper([h|t], acc) when is_list(h) do
+      defp #{from_list}_helper([h|t], acc) when is_list(h) do
         #{from_list}_helper(t, #{from_list}_helper(h, acc))
       end
 
-      def #{from_list}_helper([h|t], acc) do
+      defp #{from_list}_helper([h|t], acc) do
         #{from_list}_helper(t, <<acc::binary, h::#{type_to_binary(elemtype)}>>)
       end
 
@@ -162,18 +162,18 @@ defmodule Futlixir.EX do
         {:ok, res}
       end
 
-      def #{to_list}_helper(0, acc, bin), do: {Enum.reverse(acc), bin}
+      defp #{to_list}_helper(0, acc, bin), do: {Enum.reverse(acc), bin}
 
-      def #{to_list}_helper(i, acc, <<h::#{type_to_binary(elemtype)}, t::binary>>)
+      defp #{to_list}_helper(i, acc, <<h::#{type_to_binary(elemtype)}, t::binary>>)
           when is_integer(i) and i > 0 do
         #{to_list}_helper(i-1, [h|acc], t)
       end
 
-      def #{to_list}_helper([i], acc, bin), do: #{to_list}_helper(i, acc, bin)
+      defp #{to_list}_helper([i], acc, bin), do: #{to_list}_helper(i, acc, bin)
 
-      def #{to_list}_helper([0|_], acc, bin), do: {Enum.reverse(acc), bin}
+      defp #{to_list}_helper([0|_], acc, bin), do: {Enum.reverse(acc), bin}
 
-      def #{to_list}_helper([i|t], acc, bin) do
+      defp #{to_list}_helper([i|t], acc, bin) do
         {inner, bin} = #{to_list}_helper(t, [], bin)
         #{to_list}_helper([i-1|t], [inner|acc], bin)
       end
