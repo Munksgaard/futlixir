@@ -18,6 +18,11 @@ type point = {x: f64, y: f64}
 entry addp [n] (points: [n]point) (i: f64): []point =
   map (\{x, y} -> {x = x + i, y = y + i}) points
 
+type foo[n] = ([n]u8, [n]u8)
+
+entry add_foo [n] (input: foo[n]): foo[n] =
+  (map2 (+) input.0 input.1, map2 (-) input.0 input.1)
+
 entry addr [n] (point: {x: [n]point, y: [n]point}) (i: f64): []point =
   []
 

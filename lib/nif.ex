@@ -4,6 +4,8 @@ defmodule Futlixir.NIF do
   to a particular Futhark library.
   """
 
+  alias Futlixir.Util
+
   def boilerplate(rootname) do
     ~s"""
     #include <erl_nif.h>
@@ -221,20 +223,24 @@ defmodule Futlixir.NIF do
   end
 
   def open_types(types) do
-    for {_, %{"elemtype" => elemtype, "rank" => rank}} <- types do
-      name = "#{elemtype}_#{rank}d"
-      "  if(open_resource(env, &#{String.upcase(name)}, \"#{name}\") == -1) return -1;"
+    for {_, type} <- types do
+      "  if(open_resource(env, &#{resource_type(type)}, \"#{resource_name(type)}\") == -1) return -1;"
     end
     |> Enum.join("\n")
   end
 
   def resource_name(%{"elemtype" => elemtype, "rank" => rank}),
-    do: String.upcase("#{elemtype}_#{rank}d")
+    do: "#{elemtype}_#{rank}d"
 
   def resource_name(%{"ctype" => ctype}) do
     ~r{^struct (?<name>[^ ]+) \*$}
     |> Regex.named_captures(ctype)
     |> Map.fetch!("name")
+  end
+
+  def resource_type(type) do
+    type
+    |> resource_name()
     |> String.upcase()
   end
 
@@ -286,7 +292,7 @@ defmodule Futlixir.NIF do
         return enif_make_badarg(env);
       }
 
-      res = enif_alloc_resource(#{resource_name(params)}, sizeof(#{ctype}));
+      res = enif_alloc_resource(#{resource_type(params)}, sizeof(#{ctype}));
       if(res == NULL) return enif_make_badarg(env);
 
       if(bin.size / sizeof(#{elemtype_t}) != #{dims |> Enum.join(" * ")}) {
@@ -321,7 +327,7 @@ defmodule Futlixir.NIF do
         return enif_make_badarg(env);
       }
 
-      if(!enif_get_resource(env, argv[1], #{resource_name(params)}, (void**) &xs)) {
+      if(!enif_get_resource(env, argv[1], #{resource_type(params)}, (void**) &xs)) {
         return enif_make_badarg(env);
       }
 
@@ -353,7 +359,7 @@ defmodule Futlixir.NIF do
         return enif_make_badarg(env);
       }
 
-      if(!enif_get_resource(env, argv[1], #{resource_name(params)}, (void**) &xs)) {
+      if(!enif_get_resource(env, argv[1], #{resource_type(params)}, (void**) &xs)) {
         return enif_make_badarg(env);
       }
 
@@ -379,7 +385,7 @@ defmodule Futlixir.NIF do
         return enif_make_badarg(env);
       }
 
-      if(!enif_get_resource(env, argv[1], #{resource_name(params)}, (void**) &xs)) {
+      if(!enif_get_resource(env, argv[1], #{resource_type(params)}, (void**) &xs)) {
         return enif_make_badarg(env);
       }
 
@@ -404,8 +410,8 @@ defmodule Futlixir.NIF do
       |> Enum.with_index()
       |> Enum.map_join("\n  ", fn {field, i} ->
         ~s"""
-        #{types[field["type"]]["ctype"]} *#{field["name"]};
-          if (!enif_get_resource(env, argv[#{i + 1}], #{resource_name(types[field["type"]])}, (void**) &#{field["name"]})) {
+        #{types[field["type"]]["ctype"]} *#{Util.safe_field_name(field["name"])};
+          if (!enif_get_resource(env, argv[#{i + 1}], #{resource_type(types[field["type"]])}, (void**) &#{Util.safe_field_name(field["name"])})) {
             return enif_make_badarg(env);
           }
         """
@@ -431,10 +437,10 @@ defmodule Futlixir.NIF do
 
       #{get_args}
 
-      res = enif_alloc_resource(#{resource_name(params)}, sizeof(#{ctype}));
+      res = enif_alloc_resource(#{resource_type(params)}, sizeof(#{ctype}));
       if(res == NULL) return enif_make_badarg(env);
 
-      if (!#{record["new"]}(*ctx, res, #{record["fields"] |> Enum.map_join(", ", &"*#{&1["name"]}")})) {
+      if (#{record["new"]}(*ctx, res, #{record["fields"] |> Enum.map_join(", ", &"*#{Util.safe_field_name(&1["name"])}")}) != 0) {
         return enif_make_badarg(env);
       }
 
@@ -473,7 +479,7 @@ defmodule Futlixir.NIF do
         return enif_make_badarg(env);
       }
 
-      if(!enif_get_resource(env, argv[1], #{resource_name(params)}, (void**) &res)) {
+      if(!enif_get_resource(env, argv[1], #{resource_type(params)}, (void**) &res)) {
         return enif_make_badarg(env);
       }
 
@@ -498,16 +504,18 @@ defmodule Futlixir.NIF do
         return enif_make_badarg(env);
       }
 
-      if(!enif_get_resource(env, argv[1], #{resource_name(params)}, (void**) &xs)) {
+      if(!enif_get_resource(env, argv[1], #{resource_type(params)}, (void**) &xs)) {
         return enif_make_badarg(env);
       }
 
       size_t n;
-      #{ops["store"]}(*ctx, *xs, NULL, &n);
+      if (#{ops["store"]}(*ctx, *xs, NULL, &n) != 0) return enif_make_badarg(env);
 
       enif_alloc_binary(n, &binary);
 
       if (#{ops["store"]}(*ctx, *xs, (void**)&binary.data, &n) != 0) return enif_make_badarg(env);
+
+      if (futhark_context_sync(*ctx) != 0) return enif_make_badarg(env);
 
       ret = enif_make_binary(env, &binary);
 
@@ -537,7 +545,7 @@ defmodule Futlixir.NIF do
       #{ctype} tmp = #{ops["restore"]}(*ctx, binary.data);
       if (futhark_context_sync(*ctx) != 0) return enif_make_badarg(env);
 
-      res = enif_alloc_resource(#{resource_name(params)}, sizeof(#{ctype}));
+      res = enif_alloc_resource(#{resource_type(params)}, sizeof(#{ctype}));
       if(res == NULL) return enif_make_badarg(env);
 
       *res = tmp;
@@ -569,14 +577,14 @@ defmodule Futlixir.NIF do
         return enif_make_badarg(env);
       }
 
-      if(!enif_get_resource(env, argv[1], #{resource_name(opaque)}, (void**) &opaque)) {
+      if(!enif_get_resource(env, argv[1], #{resource_type(opaque)}, (void**) &opaque)) {
         return enif_make_badarg(env);
       }
 
-      res = enif_alloc_resource(#{resource_name(types[type])}, sizeof(#{types[type]["ctype"]}));
+      res = enif_alloc_resource(#{resource_type(types[type])}, sizeof(#{types[type]["ctype"]}));
       if(res == NULL) return enif_make_badarg(env);
 
-      if (!#{project}(*ctx, res, *opaque)) {
+      if (#{project}(*ctx, res, *opaque) != 0) {
         return enif_make_badarg(env);
       }
 
@@ -622,7 +630,7 @@ defmodule Futlixir.NIF do
             Enum.with_index(inputs, 1) do
         if types[type] do
           ~s"""
-          if(!enif_get_resource(env, argv[#{i}], #{resource_name(types[type])}, (void**) &#{name})) {
+          if(!enif_get_resource(env, argv[#{i}], #{resource_type(types[type])}, (void**) &#{name})) {
               return enif_make_badarg(env);
             }
           """
@@ -639,7 +647,7 @@ defmodule Futlixir.NIF do
     alloc_results =
       for %{"type" => type, "unique" => _unique} <- outputs do
         ~s"""
-        res = enif_alloc_resource(#{resource_name(types[type])}, sizeof(#{types[type]["ctype"]}));
+        res = enif_alloc_resource(#{resource_type(types[type])}, sizeof(#{types[type]["ctype"]}));
           if(res == NULL) return enif_make_badarg(env);
         """
       end
@@ -701,7 +709,7 @@ defmodule Futlixir.NIF do
 
   def print_nif_resources(device, types) do
     for {_ty, desc} <- types do
-      IO.puts(device, "ErlNifResourceType* #{resource_name(desc)};")
+      IO.puts(device, "ErlNifResourceType* #{resource_type(desc)};")
     end
   end
 

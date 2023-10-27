@@ -47,7 +47,6 @@ xs_binary =
 :ok = Map.NIF.futhark_free_u8_2d(ctx, ys)
 :ok = Map.NIF.futhark_free_u8_2d(ctx, zs)
 
-
 {:ok, xs} = Map.NIF.futhark_i32_1d_from_list(ctx, [42, 43])
 {:ok, zs} = Map.NIF.futhark_entry_addi(ctx, xs, 2)
 {:ok, [44, 45]} = Map.NIF.futhark_i32_1d_to_list(ctx, zs)
@@ -64,7 +63,33 @@ xs_binary =
 :ok = Map.NIF.futhark_free_f64_2d(ctx, xs)
 :ok = Map.NIF.futhark_free_f64_2d(ctx, zs)
 
-# TODO: Add tests for opaque: new, store, restore, projection
+{:ok, xs} = Map.NIF.futhark_u8_1d_from_list(ctx, [8, 10])
+{:ok, ys} = Map.NIF.futhark_u8_1d_from_list(ctx, [2, 5])
+{:ok, [2,5]} = Map.NIF.futhark_u8_1d_to_list(ctx, ys)
+
+{:ok, opaque} = Map.NIF.futhark_new_opaque_foo(ctx, xs, ys)
+
+{:ok, added} = Map.NIF.futhark_entry_add_foo(ctx, opaque)
+
+{:ok, stored} = Map.NIF.futhark_store_opaque_foo(ctx, added)
+
+{:ok, restored} = Map.NIF.futhark_restore_opaque_foo(ctx, stored)
+
+{:ok, projected_xs} = Map.NIF.futhark_project_opaque_foo_0(ctx, added)
+
+{:ok, projected_ys} = Map.NIF.futhark_project_opaque_foo_1(ctx, added)
+
+{:ok, [10, 15]} = Map.NIF.futhark_u8_1d_to_list(ctx, projected_xs)
+{:ok, [6,5]} = Map.NIF.futhark_u8_1d_to_list(ctx, projected_ys)
+
+:ok = Map.NIF.futhark_free_u8_1d(ctx, xs)
+:ok = Map.NIF.futhark_free_u8_1d(ctx, ys)
+:ok = Map.NIF.futhark_free_u8_1d(ctx, projected_xs)
+:ok = Map.NIF.futhark_free_u8_1d(ctx, projected_ys)
+
+:ok = Map.NIF.futhark_free_opaque_foo(ctx, opaque)
+:ok = Map.NIF.futhark_free_opaque_foo(ctx, added)
+:ok = Map.NIF.futhark_free_opaque_foo(ctx, restored)
 
 :ok = Map.NIF.futhark_context_free(ctx)
 :ok = Map.NIF.futhark_context_config_free(cfg)

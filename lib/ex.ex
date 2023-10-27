@@ -3,6 +3,8 @@ defmodule Futlixir.EX do
   This module is responsible for generating the boilerplate Elixir module that loads the NIF.
   """
 
+  alias Futlixir.Util
+
   def boilerplate(module_name, nif) do
     ~s"""
     defmodule #{module_name} do
@@ -75,7 +77,7 @@ defmodule Futlixir.EX do
       end
       |> Enum.join("\n\n")
 
-    new_args = Enum.map_join(record["fields"], ", ", &"_#{&1["name"]}")
+    new_args = Enum.map_join(record["fields"], ", ", &"_#{Util.safe_field_name(&1["name"])}")
 
     ~s"""
     #{new_type(Map.delete(params, "record"))}
