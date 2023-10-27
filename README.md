@@ -47,10 +47,10 @@ binaries on the Elixir-side.
 
 ## TODO
 
- - [ ] Support and test multidimensional arrays
- - [ ] Support using Elixir lists for arrays
- - [ ] Support scalar arguments
- - [ ] Support opaque Futhark types
+ - [x] Support and test multidimensional arrays
+ - [x] Support using Elixir lists for arrays
+ - [x] Support scalar arguments
+ - [x] Support opaque Futhark types
  - [ ] Support multiple return values
  - [ ] Package as a proper application
  - [ ] Release with mix?
