@@ -13,7 +13,7 @@ lib_map_nif.c: lib_map.c lib_map.json futlixir
 
 lib_map.ex: futlixir
 
-futlixir:
+futlixir: lib/cli.ex lib/ex.ex lib/cli.ex
 	mix escript.build
 
 # https://stackoverflow.com/questions/3046117/gnu-makefile-multiple-outputs-from-single-rule-preventing-intermediate-files
@@ -28,4 +28,4 @@ lib_map.so: lib_map.c lib_map.h
 
 .PHONY: clean
 clean:
-	rm -f *.so lib_map.c lib_map.h lib_map.json lib_map.ex lib_map_nif.c
+	rm -f *.so lib_map.c lib_map.h lib_map.json lib_map.ex lib_map_nif.c futlixir
