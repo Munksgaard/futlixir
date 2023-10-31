@@ -51,7 +51,7 @@ binaries on the Elixir-side.
  - [x] Support using Elixir lists for arrays
  - [x] Support scalar arguments
  - [x] Support opaque Futhark types
- - [ ] Support multiple return values
+ - [x] Support multiple return values
  - [ ] Package as a proper application
  - [ ] Release with mix?
  - [ ] Flakify

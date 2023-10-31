@@ -26,6 +26,8 @@ entry add_foo [n] (input: foo[n]): foo[n] =
 entry addr [n] (point: {x: [n]point, y: [n]point}) (i: f64): []point =
   []
 
+entry two_outputs (x: u32) (y: u32): (u32, [2]u32) = (y, [x,y])
+
 entry to_points [n] (xs: [n]f64) (ys: [n]f64): [n]point =
   map2 (\x y -> {x = x, y = y}) xs ys
 

@@ -91,5 +91,10 @@ xs_binary =
 :ok = Map.NIF.futhark_free_opaque_foo(ctx, added)
 :ok = Map.NIF.futhark_free_opaque_foo(ctx, restored)
 
+{:ok, {2, xs}} = Map.NIF.futhark_entry_two_outputs(ctx, 1, 2)
+{:ok, [1,2]} = Map.NIF.futhark_u32_1d_to_list(ctx, xs)
+
+:ok = Map.NIF.futhark_free_u32_1d(ctx, xs)
+
 :ok = Map.NIF.futhark_context_free(ctx)
 :ok = Map.NIF.futhark_context_config_free(cfg)
