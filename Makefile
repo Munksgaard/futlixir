@@ -6,7 +6,7 @@ run: all lib_map.ex
 	iex --dot-iex test.exs
 
 lib_map_nif.so: lib_map_nif.c lib_map.c
-	gcc -shared -o $@ -fPIC $< -lOpenCL -lm
+	gcc -Wall -shared -o $@ -fPIC $< -lOpenCL -lm
 
 lib_map_nif.c: lib_map.c lib_map.json futlixir
 	./futlixir lib_map.json Map.NIF
