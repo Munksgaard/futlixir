@@ -17,7 +17,7 @@ futlixir: lib/cli.ex lib/ex.ex lib/cli.ex
 	mix escript.build
 
 # https://stackoverflow.com/questions/3046117/gnu-makefile-multiple-outputs-from-single-rule-preventing-intermediate-files
-lib_map.c lib_map.h: lib_map.intermediate ;
+lib_map.c lib_map.h lib_map.json: lib_map.intermediate ;
 
 .INTERMEDIATE: lib_map.intermediate
 lib_map.intermediate: lib_map.fut
