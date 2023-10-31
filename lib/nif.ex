@@ -606,7 +606,7 @@ defmodule Futlixir.NIF do
         types
       ) do
     init_inputs =
-      for %{"name" => name, "type" => type, "unique" => _unique} <- inputs do
+      Enum.map_join(inputs, "  ", fn %{"name" => name, "type" => type, "unique" => _unique} ->
         if types[type] do
           ~s"""
           #{types[type]["ctype"]}*#{name};
@@ -616,22 +616,23 @@ defmodule Futlixir.NIF do
           #{to_elemtype_t(type)} #{name};
           """
         end
-      end
-      |> Enum.join("  ")
+      end)
 
     init_outputs =
-      for {%{"type" => type, "unique" => _unique}, i} <- Enum.with_index(outputs, 1) do
+      outputs
+      |> Enum.with_index(1)
+      |> Enum.map_join("\n  ", fn {%{"type" => type, "unique" => _unique}, i} ->
         if types[type] do
           "#{types[type]["ctype"]}*res_#{i};"
         else
           "#{to_elemtype_t(type)} res_#{i};"
         end
-      end
-      |> Enum.join("\n  ")
+      end)
 
     get_resources =
-      for {%{"name" => name, "type" => type, "unique" => _unique}, i} <-
-            Enum.with_index(inputs, 1) do
+      inputs
+      |> Enum.with_index(1)
+      |> Enum.map_join("\n  ", fn {%{"name" => name, "type" => type, "unique" => _unique}, i} ->
         if types[type] do
           ~s"""
           if(!enif_get_resource(env, argv[#{i}], #{resource_type(types[type])}, (void**) &#{name})) {
@@ -645,13 +646,12 @@ defmodule Futlixir.NIF do
             }
           """
         end
-      end
-      |> Enum.join("\n  ")
+      end)
 
     alloc_results =
       outputs
       |> Enum.with_index(1)
-      |> Enum.map(fn {%{"type" => type, "unique" => _unique}, i} ->
+      |> Enum.map_join("\n  ", fn {%{"type" => type, "unique" => _unique}, i} ->
         if t = types[type] do
           ~s"""
           res_#{i} = enif_alloc_resource(#{resource_type(t)}, sizeof(#{t["ctype"]}));
@@ -661,31 +661,20 @@ defmodule Futlixir.NIF do
           "res_#{i} = 0;"
         end
       end)
-      |> Enum.join("\n  ")
 
-    input_names =
-      for(
-        %{"name" => name, "type" => type} <-
-          inputs,
-        do:
-          if types[type] do
-            "*#{name}"
-          else
-            name
-          end
-      )
-      |> Enum.join(", ")
+    input_names = Enum.map_join(inputs, ", ", &"#{if types[&1["type"]], do: "*"}#{&1["name"]}")
 
     output_names =
       outputs
       |> Enum.with_index(1)
-      |> Enum.map(fn {%{"type" => type}, i} -> "#{if is_nil(types[type]), do: "&"}res_#{i}" end)
-      |> Enum.join(", ")
+      |> Enum.map_join(", ", fn {%{"type" => type}, i} ->
+        "#{if is_nil(types[type]), do: "&"}res_#{i}"
+      end)
 
     make_outputs =
       outputs
       |> Enum.with_index(1)
-      |> Enum.map(fn {%{"type" => type}, i} ->
+      |> Enum.map_join("\n  ", fn {%{"type" => type}, i} ->
         if types[type] do
           ~s"""
           ret_#{i} = enif_make_resource(env, res_#{i});
@@ -695,12 +684,11 @@ defmodule Futlixir.NIF do
           "ret_#{i} = #{make_type(type)}(env, res_#{i});"
         end
       end)
-      |> Enum.join("\n  ")
 
     make_returns =
       case length(outputs) do
         1 -> "ret_1"
-        n -> "enif_make_tuple(env, #{n}, #{1..n |> Enum.map(&"ret_#{&1}") |> Enum.join(", ")})"
+        n -> "enif_make_tuple(env, #{n}, #{1..n |> Enum.map_join(", ", &"ret_#{&1}")})"
       end
 
     ~s"""
@@ -711,7 +699,7 @@ defmodule Futlixir.NIF do
       #{init_inputs}
       #{init_outputs}
 
-      ERL_NIF_TERM #{1..length(outputs) |> Enum.map(&"ret_#{&1}") |> Enum.join(", ")};
+      ERL_NIF_TERM #{1..length(outputs) |> Enum.map_join(", ", &"ret_#{&1}")};
 
       if(argc != #{length(inputs) + 1}) {
         return enif_make_badarg(env);
